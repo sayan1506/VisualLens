@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "problem_id": "167",
+    "title": "Two Sum II",
+    "canvas": { "width": 1280, "height": 720 }
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Two Sum II",
+            "subtitle": "Find two numbers in a sorted array that add up to the target"
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s2",
+      "template": "concept",
+      "components": [
+        {
+          "type": "text",
+          "props": {
+            "text": "The array is sorted. Start one pointer at the smallest value and one at the largest, then move them inward based on how their sum compares to the target.",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "callout",
+          "props": {
+            "variant": "info",
+            "text": "If the sum is too big, the largest value is too big → move R inward. If too small → move L inward."
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s3",
+      "template": "code_walk",
+      "components": [
+        {
+          "type": "code_panel",
+          "props": {
+            "title": "Two pointers",
+            "activeLine": 2,
+            "lines": [
+              "left = 0, right = n - 1",
+              "while left < right:",
+              "  sum = nums[left] + nums[right]",
+              "  if sum == target: return [left, right]",
+              "  elif sum > target: right -= 1",
+              "  else: left += 1"
+            ]
+          }
+        },
+        {
+          "type": "array_block",
+          "props": {
+            "values": [2, 7, 11, 15],
+            "highlighted": [0, 3],
+            "pointers": [
+              { "label": "L", "index": 0, "color": "orange" },
+              { "label": "R", "index": 3, "color": "blue" }
+            ]
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s4",
+      "template": "array_state",
+      "components": [
+        {
+          "type": "array_block",
+          "props": {
+            "values": [2, 7, 11, 15],
+            "highlighted": [0, 3],
+            "pointers": [
+              { "label": "L", "index": 0, "color": "orange" },
+              { "label": "R", "index": 3, "color": "blue" }
+            ]
+          }
+        },
+        { "type": "state_panel", "props": { "vars": { "sum": 17, "target": 9 } } },
+        {
+          "type": "callout",
+          "props": { "variant": "info", "text": "2 + 15 = 17, greater than 9 → move R left." }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s5",
+      "template": "array_state",
+      "components": [
+        {
+          "type": "array_block",
+          "props": {
+            "values": [2, 7, 11, 15],
+            "highlighted": [0, 2],
+            "pointers": [
+              { "label": "L", "index": 0, "color": "orange" },
+              { "label": "R", "index": 2, "color": "blue" }
+            ]
+          }
+        },
+        { "type": "state_panel", "props": { "vars": { "sum": 13, "target": 9 } } },
+        {
+          "type": "callout",
+          "props": { "variant": "info", "text": "2 + 11 = 13, still greater than 9 → move R left." }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s6",
+      "template": "array_state",
+      "components": [
+        {
+          "type": "array_block",
+          "props": {
+            "values": [2, 7, 11, 15],
+            "highlighted": [0, 1],
+            "pointers": [
+              { "label": "L", "index": 0, "color": "orange" },
+              { "label": "R", "index": 1, "color": "blue" }
+            ]
+          }
+        },
+        { "type": "state_panel", "props": { "vars": { "sum": 9, "target": 9 } } },
+        {
+          "type": "callout",
+          "props": { "variant": "success", "text": "2 + 7 = 9. Found the pair at indices 1 and 2." }
+        }
+      ],
+      "narration": ""
+    }
+  ]
+}

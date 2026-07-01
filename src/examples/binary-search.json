@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "problem_id": "704",
+    "title": "Binary Search",
+    "canvas": { "width": 1280, "height": 720 }
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Binary Search",
+            "subtitle": "Find a target in a sorted array in O(log n) time"
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s2",
+      "template": "concept",
+      "components": [
+        {
+          "type": "text",
+          "props": {
+            "text": "Look at the middle element. If it equals the target, done. If it is too small, the answer must be to the right; if too big, to the left. Each step throws away half the array.",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "callout",
+          "props": {
+            "variant": "info",
+            "text": "Halving the search space every step is what makes it O(log n)."
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s3",
+      "template": "code_walk",
+      "components": [
+        {
+          "type": "code_panel",
+          "props": {
+            "title": "Binary search",
+            "activeLine": 3,
+            "lines": [
+              "lo = 0, hi = n - 1",
+              "while lo <= hi:",
+              "  mid = (lo + hi) // 2",
+              "  if nums[mid] == target: return mid",
+              "  elif nums[mid] < target: lo = mid + 1",
+              "  else: hi = mid - 1"
+            ]
+          }
+        },
+        {
+          "type": "array_block",
+          "props": {
+            "values": [1, 3, 5, 7, 9, 11],
+            "highlighted": [0, 1, 2, 3, 4, 5],
+            "pointers": [
+              { "label": "lo", "index": 0, "color": "orange" },
+              { "label": "hi", "index": 5, "color": "blue" }
+            ]
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s4",
+      "template": "array_state",
+      "components": [
+        {
+          "type": "array_block",
+          "props": {
+            "values": [1, 3, 5, 7, 9, 11],
+            "highlighted": [2],
+            "pointers": [
+              { "label": "lo", "index": 0, "color": "orange" },
+              { "label": "mid", "index": 2, "color": "green" },
+              { "label": "hi", "index": 5, "color": "blue" }
+            ]
+          }
+        },
+        { "type": "state_panel", "props": { "vars": { "lo": 0, "hi": 5, "mid": 2, "nums[mid]": 5, "target": 7 } } },
+        {
+          "type": "callout",
+          "props": { "variant": "info", "text": "nums[2] = 5 < 7 → discard the left half, set lo = 3." }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s5",
+      "template": "array_state",
+      "components": [
+        {
+          "type": "array_block",
+          "props": {
+            "values": [1, 3, 5, 7, 9, 11],
+            "highlighted": [4],
+            "pointers": [
+              { "label": "lo", "index": 3, "color": "orange" },
+              { "label": "mid", "index": 4, "color": "green" },
+              { "label": "hi", "index": 5, "color": "blue" }
+            ]
+          }
+        },
+        { "type": "state_panel", "props": { "vars": { "lo": 3, "hi": 5, "mid": 4, "nums[mid]": 9, "target": 7 } } },
+        {
+          "type": "callout",
+          "props": { "variant": "info", "text": "nums[4] = 9 > 7 → discard the right half, set hi = 3." }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s6",
+      "template": "array_state",
+      "components": [
+        {
+          "type": "array_block",
+          "props": {
+            "values": [1, 3, 5, 7, 9, 11],
+            "highlighted": [3],
+            "pointers": [
+              { "label": "mid", "index": 3, "color": "green" }
+            ]
+          }
+        },
+        { "type": "state_panel", "props": { "vars": { "lo": 3, "hi": 3, "mid": 3, "nums[mid]": 7, "target": 7 } } },
+        {
+          "type": "callout",
+          "props": { "variant": "success", "text": "nums[3] = 7 = target. Found it at index 3." }
+        }
+      ],
+      "narration": ""
+    }
+  ]
+}
