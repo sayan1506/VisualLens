@@ -26,7 +26,7 @@ There are two tools:
 ## Install
 
 ```bash
-git clone https://github.com/<your-username>/VisualLens.git
+git clone https://github.com/sayan1506/VisualLens.git
 cd VisualLens
 npm install
 npx playwright install chromium   # one-time headless-browser download
