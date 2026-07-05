@@ -45,6 +45,18 @@ function sanitizeStep(step) {
   }
   if (step.explanation !== undefined) out.explanation = String(step.explanation)
   if (['info', 'warn', 'success'].includes(step.variant)) out.variant = step.variant
+  // Optional: active code line (0-indexed into code_display) for the code panel.
+  if (Number.isInteger(step.line)) out.line = step.line
+  // Optional author overrides. Whitelisted here so they actually reach buildDeck
+  // — anything not copied out is dropped, which previously silently swallowed these.
+  if (Array.isArray(step.notes)) out.notes = step.notes.map((n) => (n == null ? null : String(n)))
+  if (step.descriptions && typeof step.descriptions === 'object') {
+    const d = {}
+    for (const k of ['array', 'state', 'code']) {
+      if (typeof step.descriptions[k] === 'string') d[k] = step.descriptions[k]
+    }
+    if (Object.keys(d).length) out.descriptions = d
+  }
   return out
 }
 

@@ -22,6 +22,7 @@ const MAX_CALLOUT = schema.maxCalloutChars
 const MAX_STEP_SLIDES = schema.maxSteps
 const CALLOUT_VARIANTS = schema.calloutVariants
 const MAX_DESC = schema.maxDescriptionChars
+const MAX_CODE = schema.maxCodeLines
 
 const clampCallout = (text) => {
   const t = String(text)
@@ -40,6 +41,7 @@ const sameValues = (a, b) =>
 const DEFAULT_DESC = {
   array: 'The array being processed. Hover a box to see its value and role at this step.',
   state: 'The variables the algorithm is tracking at this step.',
+  code: 'The algorithm being traced. The highlighted line is what runs at this step.',
 }
 
 // Default per-box hover text (the prototype's boxRole): value + a light,
@@ -69,6 +71,7 @@ export function buildDeckFromSteps({
   steps,
   initialValues,
   canvas,
+  codeDisplay,
 }) {
   let sid = 0
   const nextId = () => `s${++sid}`
@@ -159,14 +162,29 @@ export function buildDeckFromSteps({
   const anyState = usableSteps.some((s) => s.state && Object.keys(s.state).length > 0)
   const provided = usableSteps.find((s) => s.descriptions)?.descriptions || {}
 
-  const components = [
-    {
-      id: 'array',
-      type: 'array_block',
-      description: clampDesc(provided.array || DEFAULT_DESC.array),
-      props: { values: seedValues },
-    },
-  ]
+  // Optional persistent code panel. code_display is the clean source to SHOW
+  // (separate from the instrumented code that was executed); record({ line })
+  // highlights a 0-indexed line into it. Present → the scene switches to the
+  // two-column code_walk layout (code beside the array), so the code panel and
+  // a tall array/state stack don't overflow the fixed canvas.
+  const codeLines = Array.isArray(codeDisplay) ? codeDisplay.map((l) => String(l)).slice(0, MAX_CODE) : null
+  const showCode = !!(codeLines && codeLines.length > 0)
+
+  const components = []
+  if (showCode) {
+    components.push({
+      id: 'code',
+      type: 'code_panel',
+      description: clampDesc(provided.code || DEFAULT_DESC.code),
+      props: { lines: codeLines, title: 'Algorithm' },
+    })
+  }
+  components.push({
+    id: 'array',
+    type: 'array_block',
+    description: clampDesc(provided.array || DEFAULT_DESC.array),
+    props: { values: seedValues },
+  })
   if (anyState) {
     components.push({
       id: 'state',
@@ -201,6 +219,9 @@ export function buildDeckFromSteps({
 
     const patch = { array: arrayPatch }
     if (anyState && step.state && Object.keys(step.state).length > 0) patch.state = { vars: step.state }
+    // Highlight the active code line when in bounds (ignore stray line indices).
+    if (showCode && Number.isInteger(step.line) && step.line >= 0 && step.line < codeLines.length)
+      patch.code = { activeLine: step.line }
 
     return {
       id: `k${idx + 1}`,
@@ -213,7 +234,9 @@ export function buildDeckFromSteps({
     sceneSteps.push({ id: `k${sceneSteps.length + 1}`, caption: clampCallout(String(outro)), variant: 'info' })
   }
 
-  const scene = { id: 'walk', template: 'array_state', components, steps: sceneSteps }
+  // code_walk is the two-column layout (code beside array); array_state stacks
+  // vertically. Pick based on whether there's a code panel to place.
+  const scene = { id: 'walk', template: showCode ? 'code_walk' : 'array_state', components, steps: sceneSteps }
   return { meta, slides: leading, scenes: [scene] }
 }
 

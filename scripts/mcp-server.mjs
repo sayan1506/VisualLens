@@ -186,6 +186,7 @@ INPUTS you provide:
 - outro? — closing note, e.g. complexity (becomes a final slide)
 - input — a JSON object your code reads, e.g. { "nums": [1,3,5,7,9,11], "target": 7 }
 - code — JavaScript (no imports, no async). Available globals: \`input\`, \`record\`.
+- code_display? — string[] (<=14): the CLEAN source lines to SHOW beside the array (NOT your instrumented \`code\`; drop the record() calls, keep the algorithm). Provide this and the walkthrough gains a persistent code panel; then pass \`line\` in each record() to highlight the running line. Omit for no code panel.
 
 record(step) — call once per step you want to show. Shape (all fields optional but include what's relevant):
   {
@@ -195,10 +196,11 @@ record(step) — call once per step you want to show. Shape (all fields optional
     state:       { name: value }     // scalar variables to show (numbers/strings/bools)
     explanation: string              // one sentence describing this step (<=160)
     variant:     "info"|"warn"|"success"  // callout style; default info, use success for the final "found" step
-    descriptions:{ array?, state? }  // OPTIONAL hover text for the panels (<=200 each). Omit — sensible defaults are added.
+    line:        number              // 0-based index into code_display to highlight this step (only if you passed code_display)
+    descriptions:{ array?, state?, code? }  // OPTIONAL hover text for the panels (<=200 each). Omit — sensible defaults are added.
     notes:       (string|null)[]     // OPTIONAL per-box hover text, parallel to values. Omit — auto-generated per box.
   }
-  Indices are 0-based and must stay within values.length.
+  Indices are 0-based and must stay within values.length (and line within code_display.length).
 
 INTERACTIVITY (automatic): array runs are rendered as a persistent "scoreboard" —
 the same boxes/panels stay on screen and only their values change between steps,
@@ -206,28 +208,68 @@ and every element shows a hover/tap description. You get this for free; the
 descriptions/notes fields above only let you OVERRIDE the defaults. Static PNGs
 look the same as before; hover text is interactive-only.
 
-EXAMPLE (binary search):
+EXAMPLE (binary search, with a code panel):
   input: { "nums": [1,3,5,7,9,11], "target": 7 }
+  code_display: [
+    "lo = 0, hi = n - 1",              // line 0
+    "while lo <= hi:",                 // line 1
+    "  mid = (lo + hi) // 2",          // line 2
+    "  if nums[mid] == target: return mid",   // line 3
+    "  elif nums[mid] < target: lo = mid + 1", // line 4
+    "  else: hi = mid - 1"             // line 5
+  ]
   code:
     const { nums, target } = input;
     let lo = 0, hi = nums.length - 1;
     while (lo <= hi) {
       const mid = Math.floor((lo + hi) / 2);
+      const found = nums[mid] === target;
       record({
         values: nums, highlighted: [mid],
         pointers: [{label:'lo',index:lo},{label:'mid',index:mid},{label:'hi',index:hi}],
         state: { lo, hi, mid, 'nums[mid]': nums[mid], target },
-        explanation: nums[mid] === target ? \`nums[\${mid}] = \${target}. Found it.\`
+        line: found ? 3 : nums[mid] < target ? 4 : 5,  // highlight the branch that runs
+        explanation: found ? \`nums[\${mid}] = \${target}. Found it.\`
                     : nums[mid] < target ? \`nums[\${mid}] < \${target}, search right.\`
                     : \`nums[\${mid}] > \${target}, search left.\`,
-        variant: nums[mid] === target ? 'success' : 'info'
+        variant: found ? 'success' : 'info'
       });
-      if (nums[mid] === target) break;
+      if (found) break;
       else if (nums[mid] < target) lo = mid + 1;
       else hi = mid - 1;
     }
 
+EXAMPLE (in-place sort — record BEFORE you mutate):
+  input: { "nums": [5, 2, 4, 1] }
+  code_display: [
+    "for i in 0..n-1:",              // line 0
+    "  for j in 0..n-1-i:",          // line 1
+    "    if nums[j] > nums[j+1]:",   // line 2
+    "      swap(nums[j], nums[j+1])" // line 3
+  ]
+  code:
+    const { nums } = input;
+    const n = nums.length;
+    for (let i = 0; i < n - 1; i++) {
+      for (let j = 0; j < n - 1 - i; j++) {
+        const willSwap = nums[j] > nums[j + 1];
+        record({                              // record the DECISION first, while
+          values: nums,                       // nums still shows the pre-swap order
+          highlighted: [j, j + 1],
+          state: { i, j, 'nums[j]': nums[j], 'nums[j+1]': nums[j + 1] },
+          line: willSwap ? 3 : 2,
+          explanation: willSwap ? 'nums[' + j + '] > nums[' + (j + 1) + '], swap them.'
+                                : 'nums[' + j + '] <= nums[' + (j + 1) + '], keep order.'
+        });
+        if (willSwap) { const t = nums[j]; nums[j] = nums[j + 1]; nums[j + 1] = t; }
+      }
+    }
+    record({ values: nums, explanation: 'Array is fully sorted.', variant: 'success' }); // final frame shows the RESULT
+  Each swap's result appears on the NEXT frame; the final record() after the loop shows the last swap's effect and the sorted array.
+
 RULES:
+- record() BEFORE you mutate. For in-place algorithms (swaps, in-place writes), snapshot the step at the TOP of the iteration — before the swap/assignment — so the array, pointers, state, and caption all describe the SAME instant, and the change shows up on the next frame. Recording AFTER a swap produces a frame whose array is already updated but whose caption/state still describe the old values (a self-contradicting slide).
+- Add ONE final record() after the loop for in-place algorithms. Because each step is captured before its mutation, the LAST mutation has no following frame — without a terminal record() the deck ends on the pre-final-swap array (e.g. a sort that looks unfinished). The final record() shows the completed result.
 - Keep it synchronous and finite. Execution is time-limited; infinite loops are killed.
 - Call record() at least once, at most ~34 times (extra steps are dropped).
 - Do not print — only record() produces output.
@@ -241,6 +283,7 @@ const codeInputSchema = {
   outro: z.string().optional(),
   input: z.record(z.any()).optional(),
   code: z.string(),
+  code_display: z.array(z.string()).optional(),
 }
 
 server.registerTool(
@@ -250,7 +293,7 @@ server.registerTool(
     description: CODE_GUIDE,
     inputSchema: codeInputSchema,
   },
-  async ({ title, subtitle, problem_id, intro, outro, input, code }) => {
+  async ({ title, subtitle, problem_id, intro, outro, input, code, code_display }) => {
     const result = await runInstrumentedCode(code, input || {}, { timeoutMs: 2000, maxSteps: 40 })
 
     if (!result.ok) {
@@ -277,6 +320,7 @@ server.registerTool(
       outro,
       steps: result.steps,
       initialValues: firstWithValues ? firstWithValues.values : null,
+      codeDisplay: code_display,
     })
 
     const res = await validateRenderReturn(deck, 'render_algorithm_from_code')
