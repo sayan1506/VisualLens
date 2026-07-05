@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { serveStaticFile } from './static.mjs'
+import { normalizeDeck } from '../../src/lib/normalize.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..', '..') // scripts/lib -> repo root
@@ -39,15 +40,19 @@ export async function renderDeckToPngs(deck, outDir) {
       window.__DECK__ = d
     }, deck)
 
+    // Scene decks expose their frames only after normalization; deck.slides
+    // alone would be just the leading title/intro. App's ?slide=N path
+    // normalizes the same way, so the count and the rendered frame agree.
+    const frameCount = (normalizeDeck(deck).slides ?? []).length
     const paths = []
-    for (let i = 0; i < deck.slides.length; i++) {
+    for (let i = 0; i < frameCount; i++) {
       await page.goto(`${base}/?slide=${i}`, { waitUntil: 'load' })
       const el = await page.waitForSelector('[data-slide-frame]')
       const num = String(i + 1).padStart(2, '0')
       const outPath = resolve(outDir, `slide-${num}.png`)
       await el.screenshot({ path: outPath })
       paths.push(outPath)
-      console.error(`  rendered slide ${num}/${deck.slides.length}`)
+      console.error(`  rendered slide ${num}/${frameCount}`)
     }
     return paths
   } finally {

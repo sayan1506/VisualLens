@@ -1,18 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import SlideRenderer from './slides/SlideRenderer'
 import type { Deck } from './types/deck'
+import { normalizeDeck } from './lib/normalize.mjs'
+import { HoverProvider, type HoverInfo } from './components/HoverContext'
 
 // Interactive deck player. Reuses the exact same SlideRenderer/components that
 // the screenshot pipeline uses — this is the Path A payoff: build the catalog
 // once, get PNGs and an interactive view from the same code.
 export default function Player({ deck }: { deck: Deck }) {
-  const n = deck.slides.length
+  // Scene decks flatten to step-slides here; components share stable ids across
+  // steps, so React patches values in place (the scoreboard) as `i` changes.
+  const slides = useMemo(() => normalizeDeck(deck).slides ?? [], [deck])
+  const n = slides.length
   const canvas = deck.meta.canvas ?? { width: 1280, height: 720 }
   const { width, height } = canvas
 
   const [i, setI] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [scale, setScale] = useState(1)
+  const [hover, setHover] = useState<HoverInfo | null>(null)
 
   const go = useCallback((next: number) => setI(() => Math.max(0, Math.min(next, n - 1))), [n])
 
@@ -57,60 +63,79 @@ export default function Player({ deck }: { deck: Deck }) {
     'rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
 
   return (
-    <div
-      className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-950 p-8"
-      data-player
-    >
-      <div style={{ width: width * scale, height: height * scale }} className="relative">
+    <HoverProvider value={setHover}>
+      <div
+        className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-950 p-8"
+        data-player
+      >
+        <div style={{ width: width * scale, height: height * scale }} className="relative">
+          <div
+            style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+            className="absolute left-0 top-0 overflow-hidden rounded-lg shadow-2xl ring-1 ring-slate-800"
+          >
+            <SlideRenderer slide={slides[i]} />
+          </div>
+        </div>
+
+        {/* Info panel: shows the hovered/focused element's description, else a hint. */}
         <div
-          style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}
-          className="absolute left-0 top-0 overflow-hidden rounded-lg shadow-2xl ring-1 ring-slate-800"
+          className="min-h-[3.75rem] w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-800/50 px-5 py-3"
+          data-info
         >
-          <SlideRenderer slide={deck.slides[i]} />
+          {hover ? (
+            <>
+              <div className="text-xs uppercase tracking-widest text-slate-500">{hover.title}</div>
+              <div className="mt-1 text-sm leading-relaxed text-slate-200">{hover.body}</div>
+            </>
+          ) : (
+            <div className="text-sm text-slate-500">
+              Hover, tap, or focus any element to see what it means.
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3" data-controls>
+          <button
+            onClick={() => go(i - 1)}
+            disabled={i === 0}
+            data-prev
+            className={`${btn} bg-slate-800 text-slate-200 hover:bg-slate-700`}
+          >
+            ‹ Prev
+          </button>
+          <button
+            onClick={() => setPlaying((p) => !p)}
+            data-playpause
+            className={`${btn} bg-sky-600 text-white hover:bg-sky-500`}
+          >
+            {playing ? '❚❚ Pause' : '▶ Play'}
+          </button>
+          <button
+            onClick={() => go(i + 1)}
+            disabled={i === n - 1}
+            data-next
+            className={`${btn} bg-slate-800 text-slate-200 hover:bg-slate-700`}
+          >
+            Next ›
+          </button>
+          <span className="ml-2 font-mono text-sm text-slate-400" data-counter>
+            {i + 1} / {n}
+          </span>
+        </div>
+
+        <div className="flex max-w-3xl flex-wrap justify-center gap-2" data-dots>
+          {slides.map((s, idx) => (
+            <button
+              key={s.id}
+              onClick={() => go(idx)}
+              aria-label={`Go to slide ${idx + 1}`}
+              className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                idx === i ? 'bg-sky-400' : 'bg-slate-700 hover:bg-slate-600'
+              }`}
+            />
+          ))}
         </div>
       </div>
-
-      <div className="flex items-center gap-3" data-controls>
-        <button
-          onClick={() => go(i - 1)}
-          disabled={i === 0}
-          data-prev
-          className={`${btn} bg-slate-800 text-slate-200 hover:bg-slate-700`}
-        >
-          ‹ Prev
-        </button>
-        <button
-          onClick={() => setPlaying((p) => !p)}
-          data-playpause
-          className={`${btn} bg-sky-600 text-white hover:bg-sky-500`}
-        >
-          {playing ? '❚❚ Pause' : '▶ Play'}
-        </button>
-        <button
-          onClick={() => go(i + 1)}
-          disabled={i === n - 1}
-          data-next
-          className={`${btn} bg-slate-800 text-slate-200 hover:bg-slate-700`}
-        >
-          Next ›
-        </button>
-        <span className="ml-2 font-mono text-sm text-slate-400" data-counter>
-          {i + 1} / {n}
-        </span>
-      </div>
-
-      <div className="flex max-w-3xl flex-wrap justify-center gap-2" data-dots>
-        {deck.slides.map((s, idx) => (
-          <button
-            key={s.id}
-            onClick={() => go(idx)}
-            aria-label={`Go to slide ${idx + 1}`}
-            className={`h-2.5 w-2.5 rounded-full transition-colors ${
-              idx === i ? 'bg-sky-400' : 'bg-slate-700 hover:bg-slate-600'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
+    </HoverProvider>
   )
 }

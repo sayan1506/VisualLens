@@ -1,0 +1,17 @@
+{
+  "maxSlides": 40,
+  "maxSteps": 34,
+  "maxTitleChars": 60,
+  "maxSubtitleChars": 100,
+  "maxTextChars": 240,
+  "maxCalloutChars": 160,
+  "maxArrayValues": 12,
+  "maxCodeLines": 14,
+  "maxPointers": 4,
+  "maxDescriptionChars": 200,
+  "defaultCanvas": { "width": 1280, "height": 720 },
+  "templates": ["title", "concept", "array_state", "code_walk"],
+  "colors": ["orange", "blue", "green", "red"],
+  "componentTypes": ["title_block", "text", "callout", "array_block", "code_panel", "state_panel"],
+  "calloutVariants": ["info", "warn", "success"]
+}

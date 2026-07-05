@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import SlideRenderer from './slides/SlideRenderer'
 import Player from './Player'
 import type { Deck } from './types/deck'
-import { resolveDeckSync, demoDeck } from './decks'
+import { resolveDeckSync, demoDeck, hasFrames } from './decks'
+import { normalizeDeck } from './lib/normalize.mjs'
 
 // Two modes, discriminated by the ?slide= param:
 //  - ?slide=N present -> SINGLE-SLIDE: render only that slide's frame, no player
@@ -12,11 +13,14 @@ import { resolveDeckSync, demoDeck } from './decks'
 //    ?deck=<example>, or the play server's /__deck.json.
 
 function SingleSlide({ deck, index }: { deck: Deck; index: number }) {
-  const clamped = Math.max(0, Math.min(index, deck.slides.length - 1))
+  // Normalize so scene decks expose their flattened step-slides to the
+  // screenshot pipeline (idempotent for plain slide decks).
+  const slides = normalizeDeck(deck).slides ?? []
+  const clamped = Math.max(0, Math.min(index, slides.length - 1))
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 p-8">
       <div className="shadow-2xl ring-1 ring-slate-800">
-        <SlideRenderer slide={deck.slides[clamped]} />
+        <SlideRenderer slide={slides[clamped]} />
       </div>
     </div>
   )
@@ -30,7 +34,7 @@ function PlayerLoader() {
     // Play server mode: fetch the deck it is serving.
     fetch('/__deck.json')
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setDeck(d && Array.isArray(d.slides) ? d : demoDeck))
+      .then((d) => setDeck(hasFrames(d) ? d : demoDeck))
       .catch(() => setDeck(demoDeck))
   }, [deck])
 

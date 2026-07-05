@@ -4,6 +4,7 @@
 import { runInstrumentedCode } from './lib/runner.mjs'
 import { buildDeckFromSteps } from './lib/buildDeck.mjs'
 import { validateDeck } from './lib/validate.mjs'
+import { normalizeDeck } from '../src/lib/normalize.mjs'
 
 let failures = 0
 const check = (name, cond, detail = '') => {
@@ -39,7 +40,15 @@ check('last step is success', bs.steps[2].variant === 'success')
 const deck = buildDeckFromSteps({ title: 'Binary Search', intro: 'Halve each step.', outro: 'O(log n).', steps: bs.steps, initialValues: bs.steps[0].values })
 const v = validateDeck(deck)
 check('assembled deck is valid', v.valid, v.errors.join('; '))
-check('deck slide count = 3 steps + title + intro + outro = 6', deck.slides.length === 6, `got ${deck.slides.length}`)
+// An array run is now emitted as a scene: 2 leading slides (title + intro) + a
+// scene whose components persist across steps.
+check('deck emits a scene', Array.isArray(deck.scenes) && deck.scenes.length === 1, `scenes=${deck.scenes?.length}`)
+check('leading slides = title + intro', deck.slides.length === 2, `got ${deck.slides.length}`)
+check('scene has persistent array component with an id', deck.scenes[0].components.some((c) => c.id === 'array'))
+// Flattened, it is still 3 steps + title + intro + outro = 6 frames for the PNG pipeline.
+const flat = normalizeDeck(deck).slides
+check('flattens to 6 frames', flat.length === 6, `got ${flat.length}`)
+check('every scene box has default hover notes', deck.scenes[0].steps[0].patch.array.notes.length === bs.steps[0].values.length)
 
 // 2. Failure: code throws.
 const thrown = await runInstrumentedCode(`throw new Error('boom')`, {}, {})

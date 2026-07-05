@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve, isAbsolute } from 'node:path'
 import { spawn } from 'node:child_process'
 import { startPlayServer } from './lib/playServer.mjs'
+import { normalizeDeck } from '../src/lib/normalize.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..')
@@ -57,7 +58,7 @@ try {
   process.exit(1)
 }
 console.error(`\n▶ VisualLens player: ${started.url}`)
-console.error(`  ${deck.slides.length} slides · "${deck.meta.title}"`)
+console.error(`  ${(normalizeDeck(deck).slides ?? []).length} slides · "${deck.meta.title}"`)
 console.error('  Arrow keys / Space to navigate, or click. Ctrl+C to stop.\n')
 openBrowser(started.url)
 

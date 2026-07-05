@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "problem_id": "1",
+    "title": "Two Sum (hashmap)",
+    "canvas": { "width": 1280, "height": 720 }
+  },
+  "slides": [
+    {
+      "id": "t",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Two Sum",
+            "subtitle": "One pass with a hashmap of seen values"
+          }
+        }
+      ],
+      "narration": ""
+    }
+  ],
+  "scenes": [
+    {
+      "id": "walk",
+      "template": "array_state",
+      "components": [
+        {
+          "id": "arr",
+          "type": "array_block",
+          "description": "nums. Each number is checked once; already-seen numbers live in the hashmap.",
+          "props": { "values": [2, 7, 11, 15, 1, 9], "label": "nums" }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "description": "The current index i, nums[i], and the complement (target - nums[i]) being looked up.",
+          "props": { "title": "State", "vars": { "target": 10 } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "k1",
+          "caption": "i = 0, nums[0] = 2. Need 8. Not seen. Store 2 -> 0.",
+          "patch": {
+            "arr": { "highlighted": [0], "notes": ["being checked: 2", null, null, null, null, null] },
+            "st": { "vars": { "target": 10, "i": 0, "nums[i]": 2, "complement": 8 } }
+          }
+        },
+        {
+          "id": "k2",
+          "caption": "i = 1, nums[1] = 7. Need 3. Not seen. Store 7 -> 1.",
+          "patch": {
+            "arr": { "highlighted": [1], "notes": ["seen: 2", "being checked: 7", null, null, null, null] },
+            "st": { "vars": { "target": 10, "i": 1, "nums[i]": 7, "complement": 3 } }
+          }
+        },
+        {
+          "id": "k3",
+          "caption": "i = 4, nums[4] = 1. Need 9. Not seen. Store 1 -> 4.",
+          "patch": {
+            "arr": { "highlighted": [4], "notes": ["seen: 2", "seen: 7", "seen: 11", "seen: 15", "being checked: 1", null] },
+            "st": { "vars": { "target": 10, "i": 4, "nums[i]": 1, "complement": 9 } }
+          }
+        },
+        {
+          "id": "k4",
+          "variant": "success",
+          "caption": "i = 5, nums[5] = 9. Need 1. Seen at index 4. Return [4, 5].",
+          "patch": {
+            "arr": { "highlighted": [4, 5], "notes": ["seen: 2", "seen: 7", "seen: 11", "seen: 15", "match: 1", "being checked: 9"] },
+            "st": { "vars": { "target": 10, "i": 5, "nums[i]": 9, "complement": 1 } }
+          }
+        }
+      ]
+    }
+  ]
+}

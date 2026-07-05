@@ -1,4 +1,5 @@
 import type { ArrayBlockProps, ColorName } from '../types/deck'
+import { hoverHandlers, useHoverSetter } from './HoverContext'
 
 const BOX = 72 // px
 const GAP = 12 // px
@@ -24,7 +25,10 @@ export default function ArrayBlock({
   highlighted = [],
   pointers = [],
   label,
-}: ArrayBlockProps) {
+  notes = [],
+  description,
+}: ArrayBlockProps & { description?: string }) {
+  const set = useHoverSetter()
   const hi = new Set(highlighted)
   return (
     <div className="flex flex-col items-center gap-3">
@@ -32,21 +36,30 @@ export default function ArrayBlock({
         <div className="text-sm uppercase tracking-widest text-slate-500">{label}</div>
       )}
       <div className="flex" style={{ gap: GAP }}>
-        {values.map((v, i) => (
-          <div key={i} className="flex flex-col items-center gap-2">
+        {values.map((v, i) => {
+          // per-box note wins; fall back to the whole-array description
+          const body = notes[i] ?? description ?? null
+          const info = body ? { title: label ? `${label}[${i}]` : `Item ${i}`, body } : null
+          return (
             <div
-              className={`flex items-center justify-center rounded-xl border-2 text-2xl font-semibold ${
-                hi.has(i)
-                  ? 'border-rose-400 bg-rose-400/20 text-white'
-                  : 'border-slate-700 bg-slate-800 text-slate-200'
-              }`}
-              style={{ width: BOX, height: BOX }}
+              key={i}
+              className="flex flex-col items-center gap-2 rounded-lg"
+              {...hoverHandlers(set, info)}
             >
-              {v}
+              <div
+                className={`flex items-center justify-center rounded-xl border-2 text-2xl font-semibold ${
+                  hi.has(i)
+                    ? 'border-rose-400 bg-rose-400/20 text-white'
+                    : 'border-slate-700 bg-slate-800 text-slate-200'
+                }`}
+                style={{ width: BOX, height: BOX }}
+              >
+                {v}
+              </div>
+              <div className="text-xs text-slate-600">{i}</div>
             </div>
-            <div className="text-xs text-slate-600">{i}</div>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <div className="flex" style={{ gap: GAP }}>
         {values.map((_, i) => {

@@ -17,6 +17,7 @@ import { validateDeck } from './lib/validate.mjs'
 import { renderDeckToPngs } from './lib/render.mjs'
 import { runInstrumentedCode } from './lib/runner.mjs'
 import { buildDeckFromSteps } from './lib/buildDeck.mjs'
+import schema from '../src/schema/limits.json' with { type: 'json' }
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..')
@@ -73,26 +74,49 @@ async function validateRenderReturn(deck, retryToolName) {
 const pointer = z.object({
   label: z.string(),
   index: z.number().int(),
-  color: z.enum(['orange', 'blue', 'green', 'red']),
+  color: z.enum(schema.colors),
 })
+// id + description are optional on any component. They MUST be listed here:
+// z.object strips unknown keys by default, so omitting them would silently drop
+// a scene component's id (breaking patching) before validateDeck ever sees it.
 const component = z.object({
-  type: z.enum(['title_block', 'text', 'callout', 'array_block', 'code_panel', 'state_panel']),
+  id: z.string().optional(),
+  type: z.enum(schema.componentTypes),
+  description: z.string().optional(),
   props: z.record(z.any()),
 })
 const slide = z.object({
   id: z.string(),
-  template: z.enum(['title', 'concept', 'array_state', 'code_walk']),
+  template: z.enum(schema.templates),
   components: z.array(component).min(1),
   narration: z.string().optional(),
 })
-const deckSchema = z.object({
-  meta: z.object({
-    problem_id: z.string().optional(),
-    title: z.string(),
-    canvas: z.object({ width: z.number(), height: z.number() }).optional(),
-  }),
-  slides: z.array(slide).min(1),
+const step = z.object({
+  id: z.string(),
+  caption: z.string().optional(),
+  variant: z.enum(schema.calloutVariants).optional(),
+  patch: z.record(z.record(z.any())).optional(),
+  narration: z.string().optional(),
 })
+const scene = z.object({
+  id: z.string(),
+  template: z.enum(schema.templates),
+  components: z.array(component).min(1),
+  steps: z.array(step).min(1),
+})
+const deckSchema = z
+  .object({
+    meta: z.object({
+      problem_id: z.string().optional(),
+      title: z.string(),
+      canvas: z.object({ width: z.number(), height: z.number() }).optional(),
+    }),
+    slides: z.array(slide).min(1).optional(),
+    scenes: z.array(scene).min(1).optional(),
+  })
+  .refine((d) => (d.slides && d.slides.length) || (d.scenes && d.scenes.length), {
+    message: 'deck must have a non-empty slides array or scenes array',
+  })
 
 const AUTHORING_GUIDE = `Render a step-by-step algorithm explainer as a slide deck. Returns one PNG per slide.
 
@@ -111,18 +135,31 @@ COMPONENTS (type → props):
 - title_block  { title (<=60 chars), subtitle? (<=100) }
 - text         { text (<=240), size?: "sm"|"md"|"lg", align?: "left"|"center" }
 - callout      { variant: "info"|"warn"|"success", text (<=160) }  // one short takeaway per step
-- array_block  { values: (number|string)[] (<=12), highlighted?: number[], pointers?: [{label,index,color}] (<=4), label? }
+- array_block  { values: (number|string)[] (<=12), highlighted?: number[], pointers?: [{label,index,color}] (<=4), label?, notes?: (string|null)[] }
 - code_panel   { lines: string[] (<=14), activeLine?: number (0-indexed), title? }
 - state_panel  { vars: { name: value }, title? }
   colors: "orange" | "blue" | "green" | "red". All indices are 0-based and must be within values.length.
 
+OPTIONAL hover text (all interactive-only; never affects PNGs):
+- Any component may carry a top-level "description" (<=200 chars): { type, description?, props }. Shown on hover/tap/focus.
+- array_block "notes" (in props) is parallel to values: notes[i] is box i's hover text (null to skip). notes.length <= values.length.
+
+SCENES (recommended for array walkthroughs — "same boxes, values change"):
+Instead of repeating near-identical array_state slides, define the components ONCE and patch per step:
+  { meta, slides:[<title/concept slides>], scenes:[ { id, template:"array_state",
+      components:[ {id:"arr", type:"array_block", description?, props:{values,...}}, {id:"st", type:"state_panel", props:{vars:{}}} ],
+      steps:[ { id, caption?(<=160), variant?, patch:{ arr:{highlighted:[..]}, st:{vars:{..}} } }, ... ] } ] }
+- Every scene component needs a unique "id". A step's patch keys are those ids; each patch shallow-merges prop overrides.
+- Patches are CUMULATIVE: a value set one step persists until another step overrides it — patch only what changed. To clear a highlight, patch highlighted:[] explicitly.
+- Scenes flatten to one PNG per step automatically. Use slides for title/concept framing, a scene for the array walkthrough.
+
 HOW TO BUILD A GOOD DECK:
-1. Slide 1: title. Slide 2: concept (the intuition). Then one array_state slide per meaningful step.
+1. Slide 1: title. Slide 2: concept (the intuition). Then a scene stepping through the array (or one array_state slide per step).
 2. Show TWO approaches when relevant: brute force first, then optimal.
 3. Every concrete value (sum, pointer positions, state vars) must be ACTUALLY CORRECT — trace the
    algorithm by hand or in code before emitting. Do not guess intermediate states.
-4. Keep each callout to a single clear sentence about what changed this step.
-5. Prefer 6-15 slides. Hard cap 40.
+4. Keep each caption/callout to a single clear sentence about what changed this step.
+5. Prefer 6-15 steps. Hard cap 40 slides total (scene steps count as slides once flattened).
 
 If the tool returns a validation error, fix exactly the listed problems and call it again.`
 
@@ -158,8 +195,16 @@ record(step) — call once per step you want to show. Shape (all fields optional
     state:       { name: value }     // scalar variables to show (numbers/strings/bools)
     explanation: string              // one sentence describing this step (<=160)
     variant:     "info"|"warn"|"success"  // callout style; default info, use success for the final "found" step
+    descriptions:{ array?, state? }  // OPTIONAL hover text for the panels (<=200 each). Omit — sensible defaults are added.
+    notes:       (string|null)[]     // OPTIONAL per-box hover text, parallel to values. Omit — auto-generated per box.
   }
   Indices are 0-based and must stay within values.length.
+
+INTERACTIVITY (automatic): array runs are rendered as a persistent "scoreboard" —
+the same boxes/panels stay on screen and only their values change between steps,
+and every element shows a hover/tap description. You get this for free; the
+descriptions/notes fields above only let you OVERRIDE the defaults. Static PNGs
+look the same as before; hover text is interactive-only.
 
 EXAMPLE (binary search):
   input: { "nums": [1,3,5,7,9,11], "target": 7 }

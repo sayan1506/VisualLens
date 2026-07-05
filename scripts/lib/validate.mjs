@@ -1,22 +1,64 @@
 // Structural + bounds + prop validation for an incoming deck.
 // Errors are human-readable so the host LLM can self-correct (the repair loop).
-// Kept in sync with src/types/deck.ts LIMITS — update both together.
+// Limits + enum lists come from src/schema/limits.json — the SAME source
+// src/types/deck.ts reads, so the renderer, validator, and MCP guide can't drift.
 
-const LIMITS = {
-  maxSlides: 40,
-  maxTitleChars: 60,
-  maxSubtitleChars: 100,
-  maxTextChars: 240,
-  maxCalloutChars: 160,
-  maxArrayValues: 12,
-  maxCodeLines: 14,
-  maxPointers: 4,
+import schema from '../../src/schema/limits.json' with { type: 'json' }
+import { normalizeDeck } from '../../src/lib/normalize.mjs'
+
+const LIMITS = schema
+const TEMPLATES = schema.templates
+const COLORS = schema.colors
+const COMPONENT_TYPES = schema.componentTypes
+const CALLOUT_VARIANTS = schema.calloutVariants
+
+// Structural checks for scene/steps. Bounds on patched props (values length,
+// highlighted/pointer indices) are NOT checked here — they're caught by the
+// normal slide validation after normalizeDeck flattens each step into a slide.
+function validateScenes(deck, err) {
+  deck.scenes.forEach((scene, si) => {
+    const at = `scene[${si}]`
+    if (!scene.id) err(`${at}: missing id`)
+    if (!TEMPLATES.includes(scene.template))
+      err(`${at}: invalid template "${scene.template}" (allowed: ${TEMPLATES.join(', ')})`)
+
+    const ids = new Set()
+    if (!Array.isArray(scene.components) || scene.components.length === 0) {
+      err(`${at}: components must be a non-empty array`)
+    } else {
+      scene.components.forEach((c, ci) => {
+        const cat = `${at}.components[${ci}]`
+        if (!c || typeof c !== 'object') return err(`${cat}: must be an object`)
+        if (!c.id) err(`${cat}: scene components require an id (for value patching)`)
+        else if (ids.has(c.id)) err(`${cat}: duplicate component id "${c.id}"`)
+        else ids.add(c.id)
+      })
+    }
+
+    if (!Array.isArray(scene.steps) || scene.steps.length === 0) {
+      return err(`${at}: steps must be a non-empty array`)
+    }
+    if (scene.steps.length > LIMITS.maxSteps)
+      err(`${at}: too many steps (${scene.steps.length} > ${LIMITS.maxSteps})`)
+
+    scene.steps.forEach((step, ti) => {
+      const sat = `${at}.steps[${ti}]`
+      if (!step.id) err(`${sat}: missing id`)
+      if (step.variant !== undefined && !CALLOUT_VARIANTS.includes(step.variant))
+        err(`${sat}: variant must be one of ${CALLOUT_VARIANTS.join(', ')}`)
+      if (typeof step.caption === 'string' && step.caption.length > LIMITS.maxCalloutChars)
+        err(`${sat}: caption exceeds ${LIMITS.maxCalloutChars} chars`)
+      if (step.patch !== undefined) {
+        if (typeof step.patch !== 'object' || step.patch === null)
+          err(`${sat}: patch must be an object of { componentId: propOverrides }`)
+        else
+          Object.keys(step.patch).forEach((pid) => {
+            if (!ids.has(pid)) err(`${sat}: patch targets unknown component id "${pid}"`)
+          })
+      }
+    })
+  })
 }
-
-const TEMPLATES = ['title', 'concept', 'array_state', 'code_walk']
-const COLORS = ['orange', 'blue', 'green', 'red']
-const COMPONENT_TYPES = ['title_block', 'text', 'callout', 'array_block', 'code_panel', 'state_panel']
-const CALLOUT_VARIANTS = ['info', 'warn', 'success']
 
 export function validateDeck(deck) {
   const errors = []
@@ -33,14 +75,24 @@ export function validateDeck(deck) {
       err('meta.canvas must have numeric width and height')
   }
 
-  if (!Array.isArray(deck.slides) || deck.slides.length === 0) {
-    err('slides must be a non-empty array')
+  // Scene decks: validate structure first (clean scene/step-referenced errors),
+  // then flatten so the per-slide checks below bounds-check every patched prop.
+  let slides = deck.slides
+  if (Array.isArray(deck.scenes) && deck.scenes.length > 0) {
+    const before = errors.length
+    validateScenes(deck, err)
+    if (errors.length > before) return { valid: false, errors } // fix structure before bounds
+    slides = normalizeDeck(deck).slides
+  }
+
+  if (!Array.isArray(slides) || slides.length === 0) {
+    err('deck must have a non-empty slides array or scenes array')
     return { valid: false, errors }
   }
-  if (deck.slides.length > LIMITS.maxSlides)
-    err(`too many slides (${deck.slides.length} > ${LIMITS.maxSlides})`)
+  if (slides.length > LIMITS.maxSlides)
+    err(`too many slides (${slides.length} > ${LIMITS.maxSlides})`)
 
-  deck.slides.forEach((slide, si) => {
+  slides.forEach((slide, si) => {
     const at = `slide[${si}]`
     if (!slide.id) err(`${at}: missing id`)
     if (!TEMPLATES.includes(slide.template))
@@ -56,6 +108,13 @@ export function validateDeck(deck) {
       if (!COMPONENT_TYPES.includes(c.type))
         return err(`${cat}: invalid type "${c.type}" (allowed: ${COMPONENT_TYPES.join(', ')})`)
       const p = c.props || {}
+
+      // description (hover/tap text) is optional on ANY component instance.
+      if (c.description !== undefined) {
+        if (typeof c.description !== 'string') err(`${cat}: description must be a string`)
+        else if (c.description.length > LIMITS.maxDescriptionChars)
+          err(`${cat}: description exceeds ${LIMITS.maxDescriptionChars} chars`)
+      }
 
       switch (c.type) {
         case 'title_block':
@@ -102,6 +161,19 @@ export function validateDeck(deck) {
                   err(`${cat}: pointer "${ptr.label}" index ${ptr.index} out of bounds (0..${n - 1})`)
                 if (!COLORS.includes(ptr.color))
                   err(`${cat}: pointer "${ptr.label}" color must be one of ${COLORS.join(', ')}`)
+              })
+            }
+          }
+          if (p.notes !== undefined) {
+            if (!Array.isArray(p.notes)) err(`${cat}: notes must be an array parallel to values`)
+            else {
+              if (p.notes.length > n)
+                err(`${cat}: notes has more entries (${p.notes.length}) than values (${n})`)
+              p.notes.forEach((note, ni) => {
+                if (note !== null && typeof note !== 'string')
+                  err(`${cat}: notes[${ni}] must be a string or null`)
+                else if (typeof note === 'string' && note.length > LIMITS.maxDescriptionChars)
+                  err(`${cat}: notes[${ni}] exceeds ${LIMITS.maxDescriptionChars} chars`)
               })
             }
           }

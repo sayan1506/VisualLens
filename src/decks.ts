@@ -39,12 +39,21 @@ export const demoDeck: Deck = {
   slides: [demoSlide],
 }
 
+// A deck is renderable if it has step slides OR scenes (which normalize into
+// slides). Guards must accept both, or scene decks silently fall back to demo.
+export function hasFrames(d?: Deck | null): d is Deck {
+  return (
+    !!d &&
+    ((Array.isArray(d.slides) && d.slides.length > 0) ||
+      (Array.isArray(d.scenes) && d.scenes.length > 0))
+  )
+}
+
 // Deck for the current URL, resolved synchronously (window injection or ?deck=).
 // Returns null when the deck must be fetched from the play server (/__deck.json).
+// The raw (canonical) deck is returned; display components call normalizeDeck.
 export function resolveDeckSync(): Deck | null {
-  if (window.__DECK__ && Array.isArray(window.__DECK__.slides) && window.__DECK__.slides.length) {
-    return window.__DECK__
-  }
+  if (hasFrames(window.__DECK__)) return window.__DECK__
   const name = new URLSearchParams(window.location.search).get('deck')
   if (name && exampleDecks[name]) return exampleDecks[name]
   return null

@@ -5,6 +5,7 @@ import { chromium } from 'playwright'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { mkdirSync, rmSync, readFileSync } from 'node:fs'
+import { normalizeDeck } from '../src/lib/normalize.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..')
@@ -23,7 +24,9 @@ try {
   console.error(`deck not found: ${deckPath}`)
   process.exit(1)
 }
-const slideCount = deck.slides.length
+// Scene decks expose their frames only after normalization; App's ?slide=N path
+// normalizes the same way, so this count matches the frame each URL renders.
+const slideCount = (normalizeDeck(deck).slides ?? []).length
 const { width, height } = deck.meta.canvas
 
 const server = await createServer({ root, server: { port: 5199 } })
