@@ -35,15 +35,17 @@ npm run build                     # produces dist/ — the server renders from t
 
 ## Quick start (no AI needed)
 
-Prove the pipeline works before wiring up Claude. Two example decks ship in `src/examples/`:
+Prove the pipeline works before wiring up Claude. Three example decks ship in `src/examples/`:
 
 ```bash
 # Render a deck to PNG slides → out/two-sum-ii/slide-01.png ...
 npm run deck two-sum-ii
 
 # Open the same deck in the interactive player (browser)
-npm run play two-sum-ii          # also: binary-search
+npm run play two-sum-ii          # also: binary-search, two-sum-scene
 ```
+
+`two-sum-scene` demonstrates the **scene** model: instead of a fresh slide per step, the components are declared once and each step patches their props, so the player animates values in place across the walkthrough.
 
 In the player: **←/→** or **Space** to navigate, **Play** to auto-advance, click the dots to jump. `Ctrl+C` in the terminal to stop.
 
@@ -121,15 +123,17 @@ Best on **single-array, clearly multi-step** algorithms:
 
 ```
 src/
-  components/     preloaded render catalog (ArrayBlock, CodePanel, StatePanel, ...)
-  slides/         SlideRenderer + template layouts
-  types/deck.ts   the deck JSON schema (AI ↔ renderer contract)
-  examples/       hand-written example decks
-  Player.tsx      interactive deck player
+  components/       preloaded render catalog (ArrayBlock, CodePanel, StatePanel, ...)
+  slides/           SlideRenderer + template layouts
+  types/deck.ts     the deck JSON schema (AI ↔ renderer contract)
+  schema/limits.json  single source of truth for limits + enum lists
+  lib/normalize.mjs   expands scenes → flat slides (called on read everywhere)
+  examples/         hand-written example decks
+  Player.tsx        interactive deck player
 scripts/
-  mcp-server.mjs  the MCP server (two tools)
-  lib/            sandbox runner, validator, deck builder, render pipeline
-out/              generated slides (gitignored)
+  mcp-server.mjs    the MCP server (two tools)
+  lib/              sandbox runner, validator, deck builder, render pipeline
+out/                generated slides (gitignored)
 ```
 
 ## License
