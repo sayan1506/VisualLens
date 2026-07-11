@@ -3,23 +3,26 @@ import { hoverHandlers, useHoverSetter } from './HoverContext'
 
 const BOX = 72 // px
 const GAP = 12 // px
+const BOX_AREA_H = 100 // box + index label
+const POINTER_ROW_H = 46 // one arrow+pill row; stacked pointers add another
 
-const pointerText: Record<ColorName, string> = {
-  orange: 'text-orange-400',
-  blue: 'text-sky-400',
-  green: 'text-emerald-400',
-  red: 'text-rose-400',
+// Center x of column `i`, shared by boxes and the pointer overlay so an arrow
+// lines up exactly under its box and can glide between columns.
+const centerX = (i: number) => i * (BOX + GAP) + BOX / 2
+
+const pointerColor: Record<ColorName, string> = {
+  orange: 'var(--pointer-orange)',
+  blue: 'var(--pointer-blue)',
+  green: 'var(--pointer-green)',
+  red: 'var(--pointer-red)',
 }
 
-const pointerBorder: Record<ColorName, string> = {
-  orange: 'border-orange-400',
-  blue: 'border-sky-400',
-  green: 'border-emerald-400',
-  red: 'border-rose-400',
-}
-
-// Value boxes in a row, index labels beneath, pointer arrows stacked below the
-// column they point at. Column widths/gaps are shared so everything stays aligned.
+// Value boxes in a row with a pointer overlay beneath. The overlay uses ONE
+// persistent node per pointer (keyed by label) positioned absolutely by index,
+// with a CSS transition on `left` — so when a step patches a pointer's index it
+// GLIDES to the new column instead of snapping. Highlights cross-fade and a
+// changed value pops (keyed by value → remount → replay `vl-value-pop`). This
+// is what makes a step read as "the board updated", not "a new slide".
 export default function ArrayBlock({
   values,
   highlighted = [],
@@ -30,55 +33,91 @@ export default function ArrayBlock({
 }: ArrayBlockProps & { description?: string }) {
   const set = useHoverSetter()
   const hi = new Set(highlighted)
+  const n = values.length
+  const rowWidth = n > 0 ? n * BOX + (n - 1) * GAP : BOX
+
+  // Stack offset: pointers sharing an index fan downward instead of overlapping.
+  let maxStack = 1
+  const stackOffset = pointers.map((p, k) => {
+    const off = pointers.slice(0, k).filter((q) => q.index === p.index).length
+    maxStack = Math.max(maxStack, off + 1)
+    return off
+  })
+  const frameH = BOX_AREA_H + maxStack * POINTER_ROW_H
+
   return (
     <div className="flex flex-col items-center gap-3">
       {label && (
-        <div className="text-sm uppercase tracking-widest text-slate-500">{label}</div>
+        <div
+          className="text-sm uppercase tracking-widest"
+          style={{ color: 'var(--vl-text-faint)' }}
+        >
+          {label}
+        </div>
       )}
-      <div className="flex" style={{ gap: GAP }}>
-        {values.map((v, i) => {
-          // per-box note wins; fall back to the whole-array description
-          const body = notes[i] ?? description ?? null
-          const info = body ? { title: label ? `${label}[${i}]` : `Item ${i}`, body } : null
-          return (
-            <div
-              key={i}
-              className="flex flex-col items-center gap-2 rounded-lg"
-              {...hoverHandlers(set, info)}
-            >
+
+      <div className="relative" style={{ width: rowWidth, height: frameH }}>
+        {/* value boxes */}
+        <div className="flex" style={{ gap: GAP }}>
+          {values.map((v, i) => {
+            const body = notes[i] ?? description ?? null
+            const info = body ? { title: label ? `${label}[${i}]` : `Item ${i}`, body } : null
+            const active = hi.has(i)
+            return (
               <div
-                className={`flex items-center justify-center rounded-xl border-2 text-2xl font-semibold ${
-                  hi.has(i)
-                    ? 'border-rose-400 bg-rose-400/20 text-white'
-                    : 'border-slate-700 bg-slate-800 text-slate-200'
-                }`}
-                style={{ width: BOX, height: BOX }}
+                key={i}
+                className="flex flex-col items-center gap-2 rounded-lg"
+                {...hoverHandlers(set, info)}
               >
-                {v}
-              </div>
-              <div className="text-xs text-slate-600">{i}</div>
-            </div>
-          )
-        })}
-      </div>
-      <div className="flex" style={{ gap: GAP }}>
-        {values.map((_, i) => {
-          const here = pointers.filter((p) => p.index === i)
-          return (
-            <div key={i} className="flex flex-col items-center gap-1" style={{ width: BOX }}>
-              {here.map((p) => (
-                <div key={p.label} className={`flex flex-col items-center ${pointerText[p.color]}`}>
-                  <span className="text-lg leading-none">▲</span>
-                  <span
-                    className={`rounded-md border px-2 py-0.5 text-sm font-bold ${pointerBorder[p.color]}`}
-                  >
-                    {p.label}
+                <div
+                  className="flex items-center justify-center rounded-xl border-2 text-2xl font-semibold"
+                  style={{
+                    width: BOX,
+                    height: BOX,
+                    borderColor: active ? 'var(--vl-highlight-border)' : 'var(--vl-box-border)',
+                    backgroundColor: active ? 'var(--vl-highlight-bg)' : 'var(--vl-box-bg)',
+                    color: active ? 'var(--vl-highlight-text)' : 'var(--vl-text)',
+                    boxShadow: active ? '0 0 0 3px var(--vl-accent-soft)' : 'none',
+                    transition:
+                      'border-color 300ms ease, background-color 300ms ease, color 300ms ease, box-shadow 300ms ease',
+                  }}
+                >
+                  <span key={String(v)} className="vl-value-pop inline-block">
+                    {v}
                   </span>
                 </div>
-              ))}
-            </div>
-          )
-        })}
+                <div className="text-xs" style={{ color: 'var(--vl-text-faint)' }}>
+                  {i}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* pointer overlay — persistent nodes that glide between columns */}
+        {pointers.map((p, k) => (
+          <div
+            key={p.label}
+            className="flex flex-col items-center"
+            style={{
+              position: 'absolute',
+              left: centerX(p.index),
+              top: BOX_AREA_H + stackOffset[k] * POINTER_ROW_H,
+              transform: 'translateX(-50%)',
+              color: pointerColor[p.color],
+              transition:
+                'left 340ms cubic-bezier(0.22, 1, 0.36, 1), top 200ms ease, color 300ms ease',
+            }}
+          >
+            <span className="text-lg leading-none">▲</span>
+            <span
+              className="rounded-md border px-2 py-0.5 text-sm font-bold"
+              style={{ borderColor: 'currentColor' }}
+            >
+              {p.label}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )

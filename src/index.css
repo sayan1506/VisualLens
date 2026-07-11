@@ -1,1 +1,135 @@
 @import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * Theme tokens. Every component reads these vars, so flipping the
+ * `data-theme` attribute on an ancestor (the SlideFrame for PNGs, the
+ * Player root for chrome) re-skins the whole tree in one place.
+ *   dark  = Silver / Black   (default)
+ *   light = Golden / White
+ * ------------------------------------------------------------------ */
+
+:root,
+[data-theme="dark"] {
+  --vl-page-bg: #060608;
+  --vl-bg: #0b0b0d;
+  --vl-bg-gradient: linear-gradient(to bottom right, #131317, #0e0e11, #060608);
+  --vl-surface: #17171a;
+  --vl-surface-alt: #050506;
+  --vl-border: #2e2e34;
+  --vl-border-strong: #c0c4cc;
+  --vl-ring: #2e2e34;
+
+  --vl-text: #e8eaed;
+  --vl-text-muted: #9ca0a8;
+  --vl-text-faint: #5c5f66;
+
+  --vl-accent: #e3b341;
+  --vl-accent-soft: rgba(227, 179, 65, 0.16);
+  --vl-accent-text: #f0d08a;
+  --vl-accent-contrast: #1a1400;
+  --vl-accent-hover: #eec25e;
+
+  --vl-box-bg: #17171a;
+  --vl-box-border: #34343a;
+  --vl-highlight-bg: rgba(227, 179, 65, 0.18);
+  --vl-highlight-border: #e3b341;
+  --vl-highlight-text: #ffffff;
+
+  --pointer-orange: #e3b341;
+  --pointer-blue: #8fb8d6;
+  --pointer-green: #86c7a2;
+  --pointer-red: #e29a88;
+
+  --vl-info-border: rgba(143, 184, 214, 0.4);
+  --vl-info-bg: rgba(143, 184, 214, 0.1);
+  --vl-info-text: #cfe2f0;
+  --vl-warn-border: rgba(227, 179, 65, 0.45);
+  --vl-warn-bg: rgba(227, 179, 65, 0.12);
+  --vl-warn-text: #f2dda6;
+  --vl-success-border: rgba(134, 199, 162, 0.4);
+  --vl-success-bg: rgba(134, 199, 162, 0.1);
+  --vl-success-text: #c4e6d3;
+
+  --vl-btn-bg: #1e1e22;
+  --vl-btn-hover: #2a2a30;
+  --vl-dot: #34343a;
+  --vl-dot-active: #e3b341;
+}
+
+[data-theme="light"] {
+  --vl-page-bg: #f2ecdd;
+  --vl-bg: #faf7f0;
+  --vl-bg-gradient: linear-gradient(to bottom right, #fffdf7, #faf7f0, #f1e9d6);
+  --vl-surface: #ffffff;
+  --vl-surface-alt: #f7f1e1;
+  --vl-border: #e3dac2;
+  --vl-border-strong: #c9a227;
+  --vl-ring: #e3dac2;
+
+  --vl-text: #1e1b16;
+  --vl-text-muted: #6b6455;
+  --vl-text-faint: #a89f8c;
+
+  --vl-accent: #c9a227;
+  --vl-accent-soft: rgba(244, 196, 48, 0.28);
+  --vl-accent-text: #7a5b00;
+  --vl-accent-contrast: #1e1b16;
+  --vl-accent-hover: #b8901d;
+
+  --vl-box-bg: #ffffff;
+  --vl-box-border: #dad0b6;
+  --vl-highlight-bg: rgba(244, 196, 48, 0.3);
+  --vl-highlight-border: #c9a227;
+  --vl-highlight-text: #1e1b16;
+
+  --pointer-orange: #b8860b;
+  --pointer-blue: #3b6ea5;
+  --pointer-green: #4e7c4e;
+  --pointer-red: #a33a2a;
+
+  --vl-info-border: rgba(59, 110, 165, 0.4);
+  --vl-info-bg: rgba(59, 110, 165, 0.08);
+  --vl-info-text: #274b72;
+  --vl-warn-border: rgba(201, 162, 39, 0.5);
+  --vl-warn-bg: rgba(244, 196, 48, 0.15);
+  --vl-warn-text: #6e5310;
+  --vl-success-border: rgba(78, 124, 78, 0.4);
+  --vl-success-bg: rgba(78, 124, 78, 0.08);
+  --vl-success-text: #345834;
+
+  --vl-btn-bg: #efe7d3;
+  --vl-btn-hover: #e4d8bb;
+  --vl-dot: #dad0b6;
+  --vl-dot-active: #c9a227;
+}
+
+/* A value that just changed settles from a slight overshoot — reads as
+ * "this cell updated" instead of a silent swap. Keyed remount triggers it. */
+@keyframes vl-value-pop {
+  0% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.vl-value-pop {
+  animation: vl-value-pop 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Player chrome buttons — hover states need real CSS, not inline styles. */
+.vl-btn {
+  background: var(--vl-btn-bg);
+  color: var(--vl-text);
+}
+.vl-btn:hover:not(:disabled) {
+  background: var(--vl-btn-hover);
+}
+.vl-btn-accent {
+  background: var(--vl-accent);
+  color: var(--vl-accent-contrast);
+}
+.vl-btn-accent:hover:not(:disabled) {
+  background: var(--vl-accent-hover);
+}

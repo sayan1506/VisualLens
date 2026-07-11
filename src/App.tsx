@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import SlideRenderer from './slides/SlideRenderer'
 import Player from './Player'
 import type { Deck } from './types/deck'
@@ -12,15 +12,27 @@ import { normalizeDeck } from './lib/normalize.mjs'
 //  - otherwise -> interactive PLAYER. Deck comes from window injection,
 //    ?deck=<example>, or the play server's /__deck.json.
 
-function SingleSlide({ deck, index }: { deck: Deck; index: number }) {
+function SingleSlide({
+  deck,
+  index,
+  theme,
+}: {
+  deck: Deck
+  index: number
+  theme: 'dark' | 'light'
+}) {
   // Normalize so scene decks expose their flattened step-slides to the
   // screenshot pipeline (idempotent for plain slide decks).
   const slides = normalizeDeck(deck).slides ?? []
   const clamped = Math.max(0, Math.min(index, slides.length - 1))
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-8">
-      <div className="shadow-2xl ring-1 ring-slate-800">
-        <SlideRenderer slide={slides[clamped]} />
+    <div
+      data-theme={theme}
+      className="flex min-h-screen items-center justify-center p-8"
+      style={{ background: 'var(--vl-page-bg)' }}
+    >
+      <div className="shadow-2xl ring-1" style={{ '--tw-ring-color': 'var(--vl-ring)' } as CSSProperties}>
+        <SlideRenderer slide={slides[clamped]} theme={theme} />
       </div>
     </div>
   )
@@ -52,9 +64,13 @@ function PlayerLoader() {
 }
 
 export default function App() {
-  const slideParam = new URLSearchParams(window.location.search).get('slide')
+  const params = new URLSearchParams(window.location.search)
+  const slideParam = params.get('slide')
   if (slideParam !== null) {
-    return <SingleSlide deck={resolveDeckSync() ?? demoDeck} index={Number(slideParam)} />
+    const theme = params.get('theme') === 'light' ? 'light' : 'dark'
+    return (
+      <SingleSlide deck={resolveDeckSync() ?? demoDeck} index={Number(slideParam)} theme={theme} />
+    )
   }
   return <PlayerLoader />
 }

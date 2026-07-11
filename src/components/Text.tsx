@@ -16,9 +16,8 @@ export default function Text({
   const hover = useHover(description ? { title: 'Text', body: description } : null)
   return (
     <p
-      className={`${sizeClass[size]} leading-relaxed text-slate-200 ${
-        align === 'center' ? 'text-center' : 'text-left'
-      }`}
+      className={`${sizeClass[size]} leading-relaxed ${align === 'center' ? 'text-center' : 'text-left'}`}
+      style={{ color: 'var(--vl-text)' }}
       {...hover}
     >
       {text}

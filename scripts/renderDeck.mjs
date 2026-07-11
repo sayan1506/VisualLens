@@ -12,9 +12,10 @@ const root = resolve(here, '..')
 
 const deckName = process.argv[2]
 if (!deckName) {
-  console.error('usage: node scripts/renderDeck.mjs <deck-name>')
+  console.error('usage: node scripts/renderDeck.mjs <deck-name> [dark|light]')
   process.exit(1)
 }
+const theme = process.argv[3] === 'light' ? 'light' : 'dark'
 
 const deckPath = resolve(root, 'src', 'examples', `${deckName}.json`)
 let deck
@@ -41,7 +42,7 @@ const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: width + 120, height: height + 120 } })
 
 for (let i = 0; i < slideCount; i++) {
-  await page.goto(`${base}/?deck=${deckName}&slide=${i}`, { waitUntil: 'load' })
+  await page.goto(`${base}/?deck=${deckName}&slide=${i}&theme=${theme}`, { waitUntil: 'load' })
   const el = await page.waitForSelector('[data-slide-frame]')
   const num = String(i + 1).padStart(2, '0')
   const outPath = resolve(outDir, `slide-${num}.png`)

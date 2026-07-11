@@ -19,6 +19,9 @@ export default function Player({ deck }: { deck: Deck }) {
   const [playing, setPlaying] = useState(false)
   const [scale, setScale] = useState(1)
   const [hover, setHover] = useState<HoverInfo | null>(null)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    new URLSearchParams(window.location.search).get('theme') === 'light' ? 'light' : 'dark',
+  )
 
   const go = useCallback((next: number) => setI(() => Math.max(0, Math.min(next, n - 1))), [n])
 
@@ -65,48 +68,70 @@ export default function Player({ deck }: { deck: Deck }) {
   return (
     <HoverProvider value={setHover}>
       <div
-        className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-950 p-8"
+        data-theme={theme}
+        className="relative flex min-h-screen flex-col items-center justify-center gap-6 p-8"
+        style={{ background: 'var(--vl-page-bg)' }}
         data-player
       >
+        <button
+          onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+          data-theme-toggle
+          aria-label="Toggle light/dark theme"
+          className={`${btn} vl-btn absolute right-6 top-6 border`}
+          style={{ borderColor: 'var(--vl-border)' }}
+        >
+          {theme === 'dark' ? '☀ Light' : '☾ Dark'}
+        </button>
+
         <div style={{ width: width * scale, height: height * scale }} className="relative">
           <div
-            style={{ width, height, transform: `scale(${scale})`, transformOrigin: 'top left' }}
-            className="absolute left-0 top-0 overflow-hidden rounded-lg shadow-2xl ring-1 ring-slate-800"
+            style={{
+              width,
+              height,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              // @ts-expect-error CSS custom property for the Tailwind ring color
+              '--tw-ring-color': 'var(--vl-ring)',
+            }}
+            className="absolute left-0 top-0 overflow-hidden rounded-lg shadow-2xl ring-1"
           >
-            <SlideRenderer slide={slides[i]} />
+            <SlideRenderer slide={slides[i]} theme={theme} />
           </div>
         </div>
 
         {/* Info panel: shows the hovered/focused element's description, else a hint. */}
         <div
-          className="min-h-[3.75rem] w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-800/50 px-5 py-3"
+          className="min-h-[3.75rem] w-full max-w-2xl rounded-xl border px-5 py-3"
+          style={{ borderColor: 'var(--vl-border)', backgroundColor: 'var(--vl-surface)' }}
           data-info
         >
           {hover ? (
             <>
-              <div className="text-xs uppercase tracking-widest text-slate-500">{hover.title}</div>
-              <div className="mt-1 text-sm leading-relaxed text-slate-200">{hover.body}</div>
+              <div
+                className="text-xs uppercase tracking-widest"
+                style={{ color: 'var(--vl-text-faint)' }}
+              >
+                {hover.title}
+              </div>
+              <div className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--vl-text)' }}>
+                {hover.body}
+              </div>
             </>
           ) : (
-            <div className="text-sm text-slate-500">
+            <div className="text-sm" style={{ color: 'var(--vl-text-faint)' }}>
               Hover, tap, or focus any element to see what it means.
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-3" data-controls>
-          <button
-            onClick={() => go(i - 1)}
-            disabled={i === 0}
-            data-prev
-            className={`${btn} bg-slate-800 text-slate-200 hover:bg-slate-700`}
-          >
+          <button onClick={() => go(i - 1)} disabled={i === 0} data-prev className={`${btn} vl-btn`}>
             ‹ Prev
           </button>
           <button
             onClick={() => setPlaying((p) => !p)}
             data-playpause
-            className={`${btn} bg-sky-600 text-white hover:bg-sky-500`}
+            className={`${btn} vl-btn-accent`}
           >
             {playing ? '❚❚ Pause' : '▶ Play'}
           </button>
@@ -114,11 +139,11 @@ export default function Player({ deck }: { deck: Deck }) {
             onClick={() => go(i + 1)}
             disabled={i === n - 1}
             data-next
-            className={`${btn} bg-slate-800 text-slate-200 hover:bg-slate-700`}
+            className={`${btn} vl-btn`}
           >
             Next ›
           </button>
-          <span className="ml-2 font-mono text-sm text-slate-400" data-counter>
+          <span className="ml-2 font-mono text-sm" style={{ color: 'var(--vl-text-muted)' }} data-counter>
             {i + 1} / {n}
           </span>
         </div>
@@ -129,9 +154,8 @@ export default function Player({ deck }: { deck: Deck }) {
               key={s.id}
               onClick={() => go(idx)}
               aria-label={`Go to slide ${idx + 1}`}
-              className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                idx === i ? 'bg-sky-400' : 'bg-slate-700 hover:bg-slate-600'
-              }`}
+              className="h-2.5 w-2.5 rounded-full transition-colors"
+              style={{ backgroundColor: idx === i ? 'var(--vl-dot-active)' : 'var(--vl-dot)' }}
             />
           ))}
         </div>

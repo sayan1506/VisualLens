@@ -35,11 +35,12 @@ interface SlideRendererProps {
   slide: Slide
   width?: number
   height?: number
+  theme?: 'dark' | 'light'
 }
 
-export default function SlideRenderer({ slide, width, height }: SlideRendererProps) {
+export default function SlideRenderer({ slide, width, height, theme }: SlideRendererProps) {
   return (
-    <SlideFrame width={width} height={height}>
+    <SlideFrame width={width} height={height} theme={theme}>
       <TemplateLayout template={slide.template}>
         {slide.components.map((c, i) => renderComponent(c, c.id ?? i))}
       </TemplateLayout>
