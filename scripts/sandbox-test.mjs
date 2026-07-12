@@ -72,5 +72,97 @@ const badDeck = buildDeckFromSteps({ title: 'Bad', steps: badPtr.steps, initialV
 const bv = validateDeck(badDeck)
 check('out-of-bounds pointer rejected by validator', bv.valid === false && bv.errors.some((e) => /out of bounds/.test(e)))
 
+// 6. Tree run: a level-order tree trace should emit a scene with a tree component.
+const treeCode = `
+  const { nodes } = input;
+  const seen = [];
+  function visit(i) {
+    if (i >= nodes.length || nodes[i] === null) return;
+    seen.push(i);
+    record({ tree: nodes, highlighted: seen.slice(),
+      pointers: [{ label: 'cur', index: i }],
+      state: { node: nodes[i] }, explanation: 'visit ' + nodes[i] });
+    visit(2 * i + 1); visit(2 * i + 2);
+  }
+  visit(0);
+`
+const tree = await runInstrumentedCode(treeCode, { nodes: [3, 9, 20, null, null, 15, 7] }, { timeoutMs: 2000, maxSteps: 40 })
+check('tree run ok', tree.ok, tree.error || '')
+check('tree visits 5 real nodes', tree.steps.length === 5, `got ${tree.steps.length}`)
+check('tree field preserved through sandbox', Array.isArray(tree.steps[0].tree) && tree.steps[0].tree.length === 7)
+const treeDeck = buildDeckFromSteps({ title: 'Max Depth', steps: tree.steps })
+const tv = validateDeck(treeDeck)
+check('tree deck is valid', tv.valid, tv.errors.join('; '))
+check(
+  'tree deck emits a tree scene',
+  treeDeck.scenes?.[0]?.components.some((c) => c.type === 'tree' && c.id === 'tree'),
+)
+check('tree scene has default per-node notes', treeDeck.scenes?.[0]?.steps[0].patch.tree.notes.length === 7)
+
+// 7. Graph run: a graph trace should emit a scene with a graph component.
+const graphCode = `
+  const nodes = [
+    { id: 'A', x: 0.5, y: 0.1 },
+    { id: 'B', x: 0.2, y: 0.5 },
+    { id: 'C', x: 0.8, y: 0.5 }
+  ];
+  const edges = [{ from: 'A', to: 'B' }, { from: 'A', to: 'C' }];
+  const visited = [];
+  for (const id of ['A', 'B', 'C']) {
+    visited.push(id);
+    record({ graph: { nodes, edges }, graphHighlighted: visited.slice(),
+      graphPointers: [{ label: 'cur', node: id }],
+      state: { visiting: id }, explanation: 'visit ' + id });
+  }
+`
+const graph = await runInstrumentedCode(graphCode, {}, { timeoutMs: 2000, maxSteps: 40 })
+check('graph run ok', graph.ok, graph.error || '')
+check('graph records 3 steps', graph.steps.length === 3, `got ${graph.steps.length}`)
+check('graph field preserved through sandbox', graph.steps[0].graph && graph.steps[0].graph.nodes.length === 3)
+check('graphHighlighted preserved', Array.isArray(graph.steps[0].graphHighlighted))
+const graphDeck = buildDeckFromSteps({ title: 'BFS', steps: graph.steps })
+const gv = validateDeck(graphDeck)
+check('graph deck is valid', gv.valid, gv.errors.join('; '))
+check(
+  'graph deck emits a graph scene',
+  graphDeck.scenes?.[0]?.components.some((c) => c.type === 'graph' && c.id === 'graph'),
+)
+check(
+  'graph scene carries pointers keyed by node id',
+  graphDeck.scenes?.[0]?.steps[0].patch.graph.pointers[0].node === 'A',
+)
+
+// 8. Validator: a tree highlight pointing at a null (missing) slot is rejected.
+const badTree = validateDeck({
+  meta: { title: 'Bad tree', canvas: { width: 1280, height: 720 } },
+  slides: [
+    { id: 's1', template: 'array_state', components: [{ type: 'tree', props: { nodes: [1, null, 3], highlighted: [1] } }] },
+  ],
+})
+check(
+  'tree null-slot highlight rejected',
+  badTree.valid === false && badTree.errors.some((e) => /null/.test(e)),
+  badTree.errors.join('; '),
+)
+
+// 9. Validator: a graph edge referencing an unknown node id is rejected.
+const badGraph = validateDeck({
+  meta: { title: 'Bad graph', canvas: { width: 1280, height: 720 } },
+  slides: [
+    {
+      id: 's1',
+      template: 'array_state',
+      components: [
+        { type: 'graph', props: { nodes: [{ id: 'A', x: 0.5, y: 0.5 }], edges: [{ from: 'A', to: 'Z' }] } },
+      ],
+    },
+  ],
+})
+check(
+  'graph unknown edge target rejected',
+  badGraph.valid === false && badGraph.errors.some((e) => /not a known node id/.test(e)),
+  badGraph.errors.join('; '),
+)
+
 console.error(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILURE(S)'}`)
 process.exit(failures === 0 ? 0 : 1)

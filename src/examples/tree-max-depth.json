@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "problem_id": "104",
+    "title": "Maximum Depth of Binary Tree",
+    "canvas": { "width": 1280, "height": 720 }
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Maximum Depth of Binary Tree",
+            "subtitle": "DFS: a node's depth is 1 + the deeper of its two children"
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s2",
+      "template": "concept",
+      "components": [
+        {
+          "type": "text",
+          "props": {
+            "text": "Walk the tree depth-first. Each node returns 1 plus the max depth of its subtrees; a missing child contributes 0. The root's return value is the answer.",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "callout",
+          "props": {
+            "variant": "info",
+            "text": "The tree is given level-order: index 0 is the root, node i's children are at 2i+1 and 2i+2."
+          }
+        }
+      ],
+      "narration": ""
+    }
+  ],
+  "scenes": [
+    {
+      "id": "walk",
+      "template": "array_state",
+      "components": [
+        {
+          "id": "tree",
+          "type": "tree",
+          "description": "The binary tree. Highlighted nodes are the ones DFS has entered so far.",
+          "props": { "nodes": [3, 9, 20, null, null, 15, 7], "label": "root" }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "description": "The node DFS is currently visiting and the best depth found so far.",
+          "props": { "title": "State", "vars": { "best": 0 } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "k1",
+          "caption": "Enter root 3 at depth 1.",
+          "patch": {
+            "tree": { "highlighted": [0], "pointers": [{ "label": "cur", "index": 0, "color": "green" }] },
+            "st": { "vars": { "node": 3, "depth": 1, "best": 1 } }
+          }
+        },
+        {
+          "id": "k2",
+          "caption": "Go left to 9 at depth 2. It has no children, so this branch bottoms out.",
+          "patch": {
+            "tree": { "highlighted": [0, 1], "pointers": [{ "label": "cur", "index": 1, "color": "green" }] },
+            "st": { "vars": { "node": 9, "depth": 2, "best": 2 } }
+          }
+        },
+        {
+          "id": "k3",
+          "caption": "Back up, go right to 20 at depth 2.",
+          "patch": {
+            "tree": { "highlighted": [0, 1, 2], "pointers": [{ "label": "cur", "index": 2, "color": "green" }] },
+            "st": { "vars": { "node": 20, "depth": 2, "best": 2 } }
+          }
+        },
+        {
+          "id": "k4",
+          "caption": "Descend to 15 at depth 3 — a new deepest level.",
+          "patch": {
+            "tree": { "highlighted": [0, 1, 2, 5], "pointers": [{ "label": "cur", "index": 5, "color": "green" }] },
+            "st": { "vars": { "node": 15, "depth": 3, "best": 3 } }
+          }
+        },
+        {
+          "id": "k5",
+          "variant": "success",
+          "caption": "7 is also at depth 3. No node goes deeper, so the maximum depth is 3.",
+          "patch": {
+            "tree": { "highlighted": [0, 1, 2, 5, 6], "pointers": [{ "label": "cur", "index": 6, "color": "green" }] },
+            "st": { "vars": { "node": 7, "depth": 3, "best": 3 } }
+          }
+        }
+      ]
+    }
+  ]
+}

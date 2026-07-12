@@ -1,0 +1,134 @@
+{
+  "meta": {
+    "problem_id": "bfs",
+    "title": "Breadth-First Search",
+    "canvas": { "width": 1280, "height": 720 }
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Breadth-First Search",
+            "subtitle": "Explore a graph level by level using a queue"
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s2",
+      "template": "concept",
+      "components": [
+        {
+          "type": "text",
+          "props": {
+            "text": "Start at a source node and use a FIFO queue. Dequeue a node, then enqueue every unvisited neighbor. Because nodes come off the queue in the order they were discovered, BFS visits everything at distance 1, then distance 2, and so on.",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "callout",
+          "props": {
+            "variant": "info",
+            "text": "Marking a node visited when you ENQUEUE it (not when you dequeue) stops it being added twice."
+          }
+        }
+      ],
+      "narration": ""
+    }
+  ],
+  "scenes": [
+    {
+      "id": "walk",
+      "template": "array_state",
+      "components": [
+        {
+          "id": "g",
+          "type": "graph",
+          "description": "The graph. Highlighted nodes have been discovered (visited); cur marks the node being processed.",
+          "props": {
+            "label": "graph",
+            "nodes": [
+              { "id": "A", "x": 0.5, "y": 0.12 },
+              { "id": "B", "x": 0.28, "y": 0.44 },
+              { "id": "C", "x": 0.72, "y": 0.44 },
+              { "id": "D", "x": 0.12, "y": 0.8 },
+              { "id": "E", "x": 0.5, "y": 0.8 },
+              { "id": "F", "x": 0.88, "y": 0.8 }
+            ],
+            "edges": [
+              { "from": "A", "to": "B" },
+              { "from": "A", "to": "C" },
+              { "from": "B", "to": "D" },
+              { "from": "B", "to": "E" },
+              { "from": "C", "to": "E" },
+              { "from": "C", "to": "F" }
+            ]
+          }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "description": "The FIFO queue and the set of nodes discovered so far.",
+          "props": { "title": "State", "vars": { "queue": "A", "visited": "A" } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "k1",
+          "caption": "Start at A: mark it visited and enqueue it.",
+          "patch": {
+            "g": { "highlighted": ["A"], "pointers": [{ "label": "cur", "node": "A", "color": "green" }] },
+            "st": { "vars": { "queue": "A", "visited": "A" } }
+          }
+        },
+        {
+          "id": "k2",
+          "caption": "Dequeue A. Its neighbors B and C are new — visit and enqueue both.",
+          "patch": {
+            "g": { "highlighted": ["A", "B", "C"], "pointers": [{ "label": "cur", "node": "A", "color": "green" }] },
+            "st": { "vars": { "queue": "B, C", "visited": "A, B, C" } }
+          }
+        },
+        {
+          "id": "k3",
+          "caption": "Dequeue B. Neighbors D and E are new; enqueue them.",
+          "patch": {
+            "g": {
+              "highlighted": ["A", "B", "C", "D", "E"],
+              "pointers": [{ "label": "cur", "node": "B", "color": "green" }]
+            },
+            "st": { "vars": { "queue": "C, D, E", "visited": "A, B, C, D, E" } }
+          }
+        },
+        {
+          "id": "k4",
+          "caption": "Dequeue C. F is new; E is already visited, so skip it.",
+          "patch": {
+            "g": {
+              "highlighted": ["A", "B", "C", "D", "E", "F"],
+              "pointers": [{ "label": "cur", "node": "C", "color": "green" }]
+            },
+            "st": { "vars": { "queue": "D, E, F", "visited": "A, B, C, D, E, F" } }
+          }
+        },
+        {
+          "id": "k5",
+          "variant": "success",
+          "caption": "D, E, F drain off the queue with no new neighbors. BFS order: A, B, C, D, E, F.",
+          "patch": {
+            "g": {
+              "highlighted": ["A", "B", "C", "D", "E", "F"],
+              "pointers": [{ "label": "cur", "node": "F", "color": "green" }]
+            },
+            "st": { "vars": { "queue": "(empty)", "visited": "A, B, C, D, E, F" } }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -52,10 +52,59 @@ function sanitizeStep(step) {
   if (Array.isArray(step.notes)) out.notes = step.notes.map((n) => (n == null ? null : String(n)))
   if (step.descriptions && typeof step.descriptions === 'object') {
     const d = {}
-    for (const k of ['array', 'state', 'code']) {
+    for (const k of ['array', 'state', 'code', 'tree', 'graph']) {
       if (typeof step.descriptions[k] === 'string') d[k] = step.descriptions[k]
     }
     if (Object.keys(d).length) out.descriptions = d
+  }
+
+  // ---- tree: a LeetCode-style level-order array. highlighted/pointers/notes
+  // above are reused with the SAME integer-index semantics as an array run, so
+  // only the node array is tree-specific here. null marks a missing node. ----
+  if (Array.isArray(step.tree)) {
+    out.tree = step.tree.map((v) => (v === null || ['number', 'string'].includes(typeof v) ? v : String(v)))
+  }
+
+  // ---- graph: nodes with normalized [0,1] positions + edges by id. Highlight,
+  // pointers, and notes are ID-based (distinct from the index-based array/tree
+  // fields), so they get their own graph* fields. ----
+  if (step.graph && typeof step.graph === 'object' && Array.isArray(step.graph.nodes)) {
+    const nodes = step.graph.nodes
+      .filter((n) => n && n.id != null && Number.isFinite(Number(n.x)) && Number.isFinite(Number(n.y)))
+      .map((n) => ({
+        id: String(n.id),
+        x: Number(n.x),
+        y: Number(n.y),
+        ...(['number', 'string'].includes(typeof n.value) ? { value: n.value } : {}),
+      }))
+    const edges = Array.isArray(step.graph.edges)
+      ? step.graph.edges
+          .filter((e) => e && e.from != null && e.to != null)
+          .map((e) => ({
+            from: String(e.from),
+            to: String(e.to),
+            ...(e.directed ? { directed: true } : {}),
+            ...(['number', 'string'].includes(typeof e.weight) ? { weight: e.weight } : {}),
+          }))
+      : []
+    out.graph = { nodes, edges }
+  }
+  if (Array.isArray(step.graphHighlighted)) {
+    out.graphHighlighted = step.graphHighlighted.filter((h) => typeof h === 'string')
+  }
+  if (Array.isArray(step.graphPointers)) {
+    out.graphPointers = step.graphPointers
+      .filter((p) => p && p.label != null && p.node != null)
+      .map((p) => ({
+        label: String(p.label),
+        node: String(p.node),
+        color: COLORS.includes(p.color) ? p.color : undefined,
+      }))
+  }
+  if (step.graphNotes && typeof step.graphNotes === 'object' && !Array.isArray(step.graphNotes)) {
+    const gn = {}
+    for (const [k, v] of Object.entries(step.graphNotes)) if (typeof v === 'string') gn[k] = v
+    out.graphNotes = gn
   }
   return out
 }

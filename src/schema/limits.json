@@ -9,9 +9,12 @@
   "maxCodeLines": 14,
   "maxPointers": 4,
   "maxDescriptionChars": 200,
+  "maxTreeNodes": 31,
+  "maxGraphNodes": 12,
+  "maxGraphEdges": 24,
   "defaultCanvas": { "width": 1280, "height": 720 },
   "templates": ["title", "concept", "array_state", "code_walk"],
   "colors": ["orange", "blue", "green", "red"],
-  "componentTypes": ["title_block", "text", "callout", "array_block", "code_panel", "state_panel"],
+  "componentTypes": ["title_block", "text", "callout", "array_block", "code_panel", "state_panel", "tree", "graph"],
   "calloutVariants": ["info", "warn", "success"]
 }

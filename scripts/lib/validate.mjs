@@ -192,6 +192,104 @@ export function validateDeck(deck) {
           if (!p.vars || typeof p.vars !== 'object')
             err(`${cat}: state_panel requires props.vars object`)
           break
+        case 'tree': {
+          if (!Array.isArray(p.nodes) || p.nodes.length === 0)
+            return err(`${cat}: tree requires non-empty props.nodes (level-order array)`)
+          if (p.nodes.length > LIMITS.maxTreeNodes)
+            err(`${cat}: nodes exceeds ${LIMITS.maxTreeNodes} elements`)
+          const n = p.nodes.length
+          // A tree index is valid only if it is in bounds AND not a null slot.
+          const filled = (i) => i >= 0 && i < n && p.nodes[i] !== null && p.nodes[i] !== undefined
+          p.nodes.forEach((v, ni) => {
+            if (v !== null && !['number', 'string'].includes(typeof v))
+              err(`${cat}: nodes[${ni}] must be a number, string, or null`)
+          })
+          if (p.highlighted !== undefined) {
+            if (!Array.isArray(p.highlighted)) err(`${cat}: highlighted must be an array`)
+            else
+              p.highlighted.forEach((h) => {
+                if (typeof h !== 'number' || h < 0 || h >= n)
+                  err(`${cat}: highlighted index ${h} out of bounds (0..${n - 1})`)
+                else if (!filled(h)) err(`${cat}: highlighted index ${h} points at a null (missing) node`)
+              })
+          }
+          if (p.pointers !== undefined) {
+            if (!Array.isArray(p.pointers)) err(`${cat}: pointers must be an array`)
+            else {
+              if (p.pointers.length > LIMITS.maxPointers)
+                err(`${cat}: too many pointers (max ${LIMITS.maxPointers})`)
+              p.pointers.forEach((ptr) => {
+                if (!ptr.label) err(`${cat}: a pointer is missing label`)
+                if (typeof ptr.index !== 'number' || ptr.index < 0 || ptr.index >= n)
+                  err(`${cat}: pointer "${ptr.label}" index ${ptr.index} out of bounds (0..${n - 1})`)
+                else if (!filled(ptr.index))
+                  err(`${cat}: pointer "${ptr.label}" points at a null (missing) node`)
+                if (!COLORS.includes(ptr.color))
+                  err(`${cat}: pointer "${ptr.label}" color must be one of ${COLORS.join(', ')}`)
+              })
+            }
+          }
+          if (p.notes !== undefined) {
+            if (!Array.isArray(p.notes)) err(`${cat}: notes must be an array parallel to nodes`)
+            else if (p.notes.length > n)
+              err(`${cat}: notes has more entries (${p.notes.length}) than nodes (${n})`)
+          }
+          break
+        }
+        case 'graph': {
+          if (!Array.isArray(p.nodes) || p.nodes.length === 0)
+            return err(`${cat}: graph requires non-empty props.nodes`)
+          if (p.nodes.length > LIMITS.maxGraphNodes)
+            err(`${cat}: nodes exceeds ${LIMITS.maxGraphNodes} elements`)
+          const ids = new Set()
+          p.nodes.forEach((nd, ni) => {
+            if (!nd || typeof nd !== 'object') return err(`${cat}: nodes[${ni}] must be an object`)
+            if (typeof nd.id !== 'string' || nd.id === '')
+              err(`${cat}: nodes[${ni}] requires a non-empty string id`)
+            else if (ids.has(nd.id)) err(`${cat}: duplicate node id "${nd.id}"`)
+            else ids.add(nd.id)
+            if (typeof nd.x !== 'number' || nd.x < 0 || nd.x > 1)
+              err(`${cat}: nodes[${ni}] x must be a number in 0..1`)
+            if (typeof nd.y !== 'number' || nd.y < 0 || nd.y > 1)
+              err(`${cat}: nodes[${ni}] y must be a number in 0..1`)
+          })
+          if (p.edges !== undefined) {
+            if (!Array.isArray(p.edges)) err(`${cat}: edges must be an array`)
+            else {
+              if (p.edges.length > LIMITS.maxGraphEdges)
+                err(`${cat}: too many edges (max ${LIMITS.maxGraphEdges})`)
+              p.edges.forEach((e, ei) => {
+                if (!e || typeof e !== 'object') return err(`${cat}: edges[${ei}] must be an object`)
+                if (!ids.has(e.from)) err(`${cat}: edges[${ei}] from "${e.from}" is not a known node id`)
+                if (!ids.has(e.to)) err(`${cat}: edges[${ei}] to "${e.to}" is not a known node id`)
+              })
+            }
+          }
+          if (p.highlighted !== undefined) {
+            if (!Array.isArray(p.highlighted)) err(`${cat}: highlighted must be an array of node ids`)
+            else
+              p.highlighted.forEach((h) => {
+                if (!ids.has(h)) err(`${cat}: highlighted "${h}" is not a known node id`)
+              })
+          }
+          if (p.pointers !== undefined) {
+            if (!Array.isArray(p.pointers)) err(`${cat}: pointers must be an array`)
+            else {
+              if (p.pointers.length > LIMITS.maxPointers)
+                err(`${cat}: too many pointers (max ${LIMITS.maxPointers})`)
+              p.pointers.forEach((ptr) => {
+                if (!ptr.label) err(`${cat}: a pointer is missing label`)
+                if (!ids.has(ptr.node))
+                  err(`${cat}: pointer "${ptr.label}" node "${ptr.node}" is not a known node id`)
+                if (!COLORS.includes(ptr.color))
+                  err(`${cat}: pointer "${ptr.label}" color must be one of ${COLORS.join(', ')}`)
+              })
+            }
+          }
+          if (p.notes !== undefined && (typeof p.notes !== 'object' || Array.isArray(p.notes)))
+            err(`${cat}: graph notes must be an object of { nodeId: string }`)
+          break
+        }
       }
     })
   })

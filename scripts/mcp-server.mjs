@@ -138,7 +138,12 @@ COMPONENTS (type → props):
 - array_block  { values: (number|string)[] (<=12), highlighted?: number[], pointers?: [{label,index,color}] (<=4), label?, notes?: (string|null)[] }
 - code_panel   { lines: string[] (<=14), activeLine?: number (0-indexed), title? }
 - state_panel  { vars: { name: value }, title? }
-  colors: "orange" | "blue" | "green" | "red". All indices are 0-based and must be within values.length.
+- tree         { nodes: (number|string|null)[] (<=31), highlighted?: number[], pointers?: [{label,index,color}] (<=4), label?, notes?: (string|null)[] }
+    // A binary tree as a LeetCode-style LEVEL-ORDER array: index 0 is the root, node i's children are 2i+1 and 2i+2, null = missing node. Layout is automatic — never supply coordinates. highlighted/pointers use these level-order indices; never reference a null slot.
+- graph        { nodes: [{id, x, y, value?}] (<=12), edges?: [{from, to, directed?, weight?}] (<=24), highlighted?: string[], pointers?: [{label, node, color}] (<=4), label?, notes?: {id: text} }
+    // A general graph. x/y are NORMALIZED positions in 0..1 (0,0 = top-left) that YOU choose to lay it out. edges reference node ids. Unlike array/tree, highlighted + pointers reference node IDS (a graph has no index order).
+  colors: "orange" | "blue" | "green" | "red". array/tree indices are 0-based and must be in bounds; graph highlighted/pointers/edges must reference known node ids.
+  Pick ONE structure per walkthrough: array_state stacks it with a state_panel; code_walk puts a code_panel beside it.
 
 OPTIONAL hover text (all interactive-only; never affects PNGs):
 - Any component may carry a top-level "description" (<=200 chars): { type, description?, props }. Shown on hover/tap/focus.
@@ -188,19 +193,33 @@ INPUTS you provide:
 - code — JavaScript (no imports, no async). Available globals: \`input\`, \`record\`.
 - code_display? — string[] (<=14): the CLEAN source lines to SHOW beside the array (NOT your instrumented \`code\`; drop the record() calls, keep the algorithm). Provide this and the walkthrough gains a persistent code panel; then pass \`line\` in each record() to highlight the running line. Omit for no code panel.
 
-record(step) — call once per step you want to show. Shape (all fields optional but include what's relevant):
+record(step) — call once per step you want to show. Shape (all fields optional but include what's relevant).
+Visualize ONE structure per run — an array, a tree, OR a graph:
   {
+    // --- ARRAY (the default structure) ---
     values:      number[]|string[]   // the array being visualized (<=12). Send once; carried forward if omitted next step.
-    highlighted: number[]            // indices to emphasize this step
-    pointers:    [{ label, index, color? }]  // <=4; color auto-assigned per label if omitted
+    highlighted: number[]            // indices to emphasize this step (ALSO used for tree)
+    pointers:    [{ label, index, color? }]  // <=4; color auto-assigned per label if omitted (ALSO used for tree)
+    notes:       (string|null)[]     // OPTIONAL per-box hover text, parallel to values/tree. Omit — auto-generated.
+
+    // --- TREE (binary tree as a LeetCode-style level-order array) ---
+    tree:        (number|string|null)[]  // <=31. index 0 = root, children of i at 2i+1/2i+2, null = missing node.
+                                          // Reuses highlighted/pointers/notes above (SAME level-order indices; never a null slot).
+
+    // --- GRAPH (id-based, so it has its OWN highlight/pointer/notes fields) ---
+    graph:            { nodes:[{id,x,y,value?}], edges?:[{from,to,directed?,weight?}] }  // x,y normalized 0..1; <=12 nodes, <=24 edges
+    graphHighlighted: string[]                    // node ids to emphasize
+    graphPointers:    [{ label, node, color? }]   // <=4; node is a node id
+    graphNotes:       { id: text }                // OPTIONAL per-node hover text keyed by id
+
+    // --- shared across all structures ---
     state:       { name: value }     // scalar variables to show (numbers/strings/bools)
     explanation: string              // one sentence describing this step (<=160)
-    variant:     "info"|"warn"|"success"  // callout style; default info, use success for the final "found" step
+    variant:     "info"|"warn"|"success"  // callout style; default info, use success for the final step
     line:        number              // 0-based index into code_display to highlight this step (only if you passed code_display)
-    descriptions:{ array?, state?, code? }  // OPTIONAL hover text for the panels (<=200 each). Omit — sensible defaults are added.
-    notes:       (string|null)[]     // OPTIONAL per-box hover text, parallel to values. Omit — auto-generated per box.
+    descriptions:{ array?, tree?, graph?, state?, code? }  // OPTIONAL hover text for the panels (<=200 each). Omit — defaults added.
   }
-  Indices are 0-based and must stay within values.length (and line within code_display.length).
+  Array/tree indices are 0-based and in bounds; graph fields reference known node ids; line is within code_display.length.
 
 INTERACTIVITY (automatic): array runs are rendered as a persistent "scoreboard" —
 the same boxes/panels stay on screen and only their values change between steps,

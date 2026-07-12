@@ -52,6 +52,52 @@ export interface StatePanelProps {
   title?: string
 }
 
+// A binary tree given as a LeetCode-style level-order array: index 0 is the
+// root, node i's children are at 2i+1 and 2i+2, and `null` marks a missing
+// node (so its subtree slots are skipped in layout). Positions are computed by
+// the component — authors only supply the array. highlighted/pointers reference
+// the SAME level-order indices, so a null slot must not be highlighted.
+export interface TreeProps {
+  nodes: (number | string | null)[]
+  highlighted?: number[]
+  pointers?: Pointer[] // pointer.index is a level-order node index
+  label?: string
+  notes?: (string | null)[] // per-node hover text, parallel to nodes
+}
+
+// A general graph with author-supplied node positions in normalized [0,1]
+// space (0,0 = top-left of the plotting area). Edges reference node ids.
+// highlighted/pointers reference node ids (NOT array indices, unlike tree/array)
+// because a graph has no natural ordering.
+export interface GraphNode {
+  id: string
+  x: number // 0..1, normalized horizontal position
+  y: number // 0..1, normalized vertical position
+  value?: number | string // label drawn inside the node; defaults to id
+}
+
+export interface GraphEdge {
+  from: string
+  to: string
+  directed?: boolean
+  weight?: number | string
+}
+
+export interface GraphPointer {
+  label: string
+  node: string // node id this pointer sits on
+  color: ColorName
+}
+
+export interface GraphProps {
+  nodes: GraphNode[]
+  edges?: GraphEdge[]
+  highlighted?: string[] // node ids to emphasize
+  pointers?: GraphPointer[]
+  label?: string
+  notes?: Record<string, string> // node id → hover text
+}
+
 // ---- component instance discriminated union ----
 // `type` selects the component; `props` is that component's prop shape.
 // Every instance may also carry (additive, backward-compatible):
@@ -69,6 +115,8 @@ export type ComponentInstance = WithMeta<
   | { type: 'array_block'; props: ArrayBlockProps }
   | { type: 'code_panel'; props: CodePanelProps }
   | { type: 'state_panel'; props: StatePanelProps }
+  | { type: 'tree'; props: TreeProps }
+  | { type: 'graph'; props: GraphProps }
 >
 
 export type ComponentType = ComponentInstance['type']

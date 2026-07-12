@@ -42,7 +42,11 @@ const DEFAULT_DESC = {
   array: 'The array being processed. Hover a box to see its value and role at this step.',
   state: 'The variables the algorithm is tracking at this step.',
   code: 'The algorithm being traced. The highlighted line is what runs at this step.',
+  tree: 'The binary tree being traversed. Hover a node to see its value and role at this step.',
+  graph: 'The graph being explored. Hover a node to see its role at this step.',
 }
+
+const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
 // Default per-box hover text (the prototype's boxRole): value + a light,
 // step-dependent role suffix from this step's pointers/highlight. Authors can
@@ -60,6 +64,151 @@ function defaultNotes(values, highlighted, pointers) {
     else if (hi.has(i)) s += ' Highlighted this step.'
     return clampDesc(s)
   })
+}
+
+// Per-node hover text for a tree run. Parallel to the level-order `nodes` array
+// (null for missing slots, which the Tree component never renders). Same shape
+// contract as defaultNotes so it passes notes.length <= nodes.length.
+function defaultTreeNotes(nodes, highlighted, pointers) {
+  const hi = new Set(Array.isArray(highlighted) ? highlighted : [])
+  const labelAt = new Map()
+  for (const p of pointers || [])
+    labelAt.set(p.index, labelAt.has(p.index) ? `${labelAt.get(p.index)}, ${p.label}` : p.label)
+  return nodes.map((v, i) => {
+    if (v === null || v === undefined) return null
+    let s = `Node ${v} at position ${i}.`
+    if (labelAt.has(i)) s += ` Pointer ${labelAt.get(i)} is here.`
+    else if (hi.has(i)) s += ' Visited this step.'
+    return clampDesc(s)
+  })
+}
+
+// Per-node hover text for a graph run, keyed by node id (graph notes are an
+// object, not a parallel array, because a graph has no natural ordering).
+function defaultGraphNotes(nodes, highlighted, pointers) {
+  const hi = new Set(Array.isArray(highlighted) ? highlighted : [])
+  const labelAt = new Map()
+  for (const p of pointers || [])
+    labelAt.set(p.node, labelAt.has(p.node) ? `${labelAt.get(p.node)}, ${p.label}` : p.label)
+  const out = {}
+  for (const n of nodes) {
+    let s = `Node ${n.value ?? n.id}.`
+    if (labelAt.has(n.id)) s += ` Pointer ${labelAt.get(n.id)} is here.`
+    else if (hi.has(n.id)) s += ' Visited this step.'
+    out[n.id] = clampDesc(s)
+  }
+  return out
+}
+
+// A run visualizes exactly ONE structure. Detection priority (array > tree >
+// graph) matches record() field precedence; null means no structure → the flat
+// fallback. seedValues is already resolved for the array case by the caller.
+function detectStructure(usableSteps, seedValues) {
+  if (Array.isArray(seedValues) && seedValues.length > 0) return 'array'
+  const t = usableSteps.find((s) => Array.isArray(s.tree) && s.tree.length > 0)
+  if (t) return 'tree'
+  const g = usableSteps.find((s) => s.graph && Array.isArray(s.graph.nodes) && s.graph.nodes.length > 0)
+  if (g) return 'graph'
+  return null
+}
+
+// Build the structure-specific persistent component and a per-step patch fn.
+// The scene assembly loop is shared across array/tree/graph; only the component
+// shape and its patch differ, so they're isolated here. Each patchFor closes
+// over carry-forward state (values/nodes/graph) so a structure prop is only
+// re-patched when it actually changes — same non-repetition rule as the array
+// path (and what makes a changed value pop instead of re-emitting every step).
+function makeViz(kind, { seedValues, usableSteps, provided, assignColor }) {
+  if (kind === 'tree') {
+    const seedNodes = (usableSteps.find((s) => Array.isArray(s.tree))?.tree || []).slice()
+    let currentNodes = seedNodes.slice()
+    return {
+      id: 'tree',
+      component: {
+        id: 'tree',
+        type: 'tree',
+        description: clampDesc(provided.tree || DEFAULT_DESC.tree),
+        props: { nodes: seedNodes },
+      },
+      patchFor(step) {
+        const p = {
+          highlighted: Array.isArray(step.highlighted) ? step.highlighted : [],
+          pointers: Array.isArray(step.pointers)
+            ? step.pointers.map((pt) => ({ label: pt.label, index: pt.index, color: assignColor(pt.label, pt.color) }))
+            : [],
+        }
+        if (Array.isArray(step.tree) && !sameValues(step.tree, currentNodes)) {
+          p.nodes = step.tree
+          currentNodes = step.tree.slice()
+        }
+        p.notes = Array.isArray(step.notes) ? step.notes : defaultTreeNotes(currentNodes, p.highlighted, p.pointers)
+        return p
+      },
+    }
+  }
+
+  if (kind === 'graph') {
+    const seed = usableSteps.find((s) => s.graph && Array.isArray(s.graph.nodes))?.graph || { nodes: [], edges: [] }
+    const seedNodes = seed.nodes.slice()
+    const seedEdges = Array.isArray(seed.edges) ? seed.edges.slice() : []
+    let currentGraph = { nodes: seedNodes, edges: seedEdges }
+    return {
+      id: 'graph',
+      component: {
+        id: 'graph',
+        type: 'graph',
+        description: clampDesc(provided.graph || DEFAULT_DESC.graph),
+        props: { nodes: seedNodes, edges: seedEdges },
+      },
+      patchFor(step) {
+        const p = {
+          highlighted: Array.isArray(step.graphHighlighted) ? step.graphHighlighted : [],
+          pointers: Array.isArray(step.graphPointers)
+            ? step.graphPointers.map((pt) => ({ label: pt.label, node: pt.node, color: assignColor(pt.label, pt.color) }))
+            : [],
+        }
+        if (step.graph && Array.isArray(step.graph.nodes)) {
+          const g = { nodes: step.graph.nodes, edges: Array.isArray(step.graph.edges) ? step.graph.edges : [] }
+          if (!sameJson(g, currentGraph)) {
+            p.nodes = g.nodes
+            p.edges = g.edges
+            currentGraph = g
+          }
+        }
+        p.notes =
+          step.graphNotes && typeof step.graphNotes === 'object' && !Array.isArray(step.graphNotes)
+            ? step.graphNotes
+            : defaultGraphNotes(currentGraph.nodes, p.highlighted, p.pointers)
+        return p
+      },
+    }
+  }
+
+  // array (default)
+  let currentValues = seedValues.slice()
+  return {
+    id: 'array',
+    component: {
+      id: 'array',
+      type: 'array_block',
+      description: clampDesc(provided.array || DEFAULT_DESC.array),
+      props: { values: seedValues },
+    },
+    patchFor(step) {
+      const p = {
+        highlighted: Array.isArray(step.highlighted) ? step.highlighted : [],
+        pointers: Array.isArray(step.pointers)
+          ? step.pointers.map((pt) => ({ label: pt.label, index: pt.index, color: assignColor(pt.label, pt.color) }))
+          : [],
+      }
+      if (Array.isArray(step.values) && !sameValues(step.values, currentValues)) {
+        p.values = step.values
+        currentValues = step.values.slice()
+      }
+      p.notes = Array.isArray(step.notes) ? step.notes : defaultNotes(currentValues, p.highlighted, p.pointers)
+      return p
+    },
+  }
 }
 
 export function buildDeckFromSteps({
@@ -116,10 +265,10 @@ export function buildDeckFromSteps({
     const firstWithValues = usableSteps.find((s) => Array.isArray(s.values))
     seedValues = firstWithValues ? firstWithValues.values.slice() : null
   }
-  const hasArray = Array.isArray(seedValues) && seedValues.length > 0
+  const structure = detectStructure(usableSteps, seedValues)
 
-  // ---- no-array fallback: original flat-slide layout ----
-  if (!hasArray) {
+  // ---- no-structure fallback: original flat-slide layout ----
+  if (!structure) {
     const slides = [...leading]
     for (const step of usableSteps) {
       const components = []
@@ -179,12 +328,8 @@ export function buildDeckFromSteps({
       props: { lines: codeLines, title: 'Algorithm' },
     })
   }
-  components.push({
-    id: 'array',
-    type: 'array_block',
-    description: clampDesc(provided.array || DEFAULT_DESC.array),
-    props: { values: seedValues },
-  })
+  const viz = makeViz(structure, { seedValues, usableSteps, provided, assignColor })
+  components.push(viz.component)
   if (anyState) {
     components.push({
       id: 'state',
@@ -194,30 +339,13 @@ export function buildDeckFromSteps({
     })
   }
 
-  // One Step per recorded step. Cumulative patching means we only re-patch
-  // `values` when they actually change (so a run that passes the same array
-  // every step doesn't repeat it); `highlighted`/`pointers` are set every step
-  // because they change and don't accumulate; `state.vars` is patched only when
+  // One Step per recorded step. The structure's patchFor (from makeViz) does the
+  // cumulative carry-forward: a structure prop (values/nodes/graph) is only
+  // re-patched when it actually changes, while highlighted/pointers are set every
+  // step (they change and don't accumulate). `state.vars` is patched only when
   // present so gaps keep the last value instead of blanking the panel.
-  let currentValues = seedValues.slice()
   const sceneSteps = usableSteps.map((step, idx) => {
-    const arrayPatch = {
-      highlighted: Array.isArray(step.highlighted) ? step.highlighted : [],
-      pointers: Array.isArray(step.pointers)
-        ? step.pointers.map((p) => ({ label: p.label, index: p.index, color: assignColor(p.label, p.color) }))
-        : [],
-    }
-    if (Array.isArray(step.values) && !sameValues(step.values, currentValues)) {
-      arrayPatch.values = step.values
-      currentValues = step.values.slice()
-    }
-    // Per-box hover text: author override wins, else auto-generate value + role
-    // (recomputed each step so the role suffix follows the pointer/highlight).
-    arrayPatch.notes = Array.isArray(step.notes)
-      ? step.notes
-      : defaultNotes(currentValues, arrayPatch.highlighted, arrayPatch.pointers)
-
-    const patch = { array: arrayPatch }
+    const patch = { [viz.id]: viz.patchFor(step) }
     if (anyState && step.state && Object.keys(step.state).length > 0) patch.state = { vars: step.state }
     // Highlight the active code line when in bounds (ignore stray line indices).
     if (showCode && Number.isInteger(step.line) && step.line >= 0 && step.line < codeLines.length)
