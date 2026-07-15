@@ -206,6 +206,7 @@ function makeViz(kind, { seedValues, usableSteps, provided, assignColor }) {
         currentValues = step.values.slice()
       }
       p.notes = Array.isArray(step.notes) ? step.notes : defaultNotes(currentValues, p.highlighted, p.pointers)
+      if (Array.isArray(step.colors)) p.colors = step.colors
       return p
     },
   }

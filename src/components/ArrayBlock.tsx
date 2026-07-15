@@ -23,12 +23,22 @@ const pointerColor: Record<ColorName, string> = {
 // GLIDES to the new column instead of snapping. Highlights cross-fade and a
 // changed value pops (keyed by value → remount → replay `vl-value-pop`). This
 // is what makes a step read as "the board updated", not "a new slide".
+// Soft per-cell fill tints (Dutch-flag / bucket coloring). Kept translucent so a
+// highlight ring still reads on top of a tinted cell.
+const fillTint: Record<ColorName, { bg: string; border: string }> = {
+  orange: { bg: 'rgba(227, 179, 65, 0.22)', border: 'var(--pointer-orange)' },
+  blue: { bg: 'rgba(143, 184, 214, 0.22)', border: 'var(--pointer-blue)' },
+  green: { bg: 'rgba(134, 199, 162, 0.22)', border: 'var(--pointer-green)' },
+  red: { bg: 'rgba(226, 154, 136, 0.22)', border: 'var(--pointer-red)' },
+}
+
 export default function ArrayBlock({
   values,
   highlighted = [],
   pointers = [],
   label,
   notes = [],
+  colors = [],
   description,
 }: ArrayBlockProps & { description?: string }) {
   const set = useHoverSetter()
@@ -63,6 +73,7 @@ export default function ArrayBlock({
             const body = notes[i] ?? description ?? null
             const info = body ? { title: label ? `${label}[${i}]` : `Item ${i}`, body } : null
             const active = hi.has(i)
+            const tint = colors[i] ? fillTint[colors[i] as ColorName] : null
             return (
               <div
                 key={i}
@@ -74,8 +85,16 @@ export default function ArrayBlock({
                   style={{
                     width: BOX,
                     height: BOX,
-                    borderColor: active ? 'var(--vl-highlight-border)' : 'var(--vl-box-border)',
-                    backgroundColor: active ? 'var(--vl-highlight-bg)' : 'var(--vl-box-bg)',
+                    borderColor: active
+                      ? 'var(--vl-highlight-border)'
+                      : tint
+                        ? tint.border
+                        : 'var(--vl-box-border)',
+                    backgroundColor: active
+                      ? 'var(--vl-highlight-bg)'
+                      : tint
+                        ? tint.bg
+                        : 'var(--vl-box-bg)',
                     color: active ? 'var(--vl-highlight-text)' : 'var(--vl-text)',
                     boxShadow: active ? '0 0 0 3px var(--vl-accent-soft)' : 'none',
                     transition:

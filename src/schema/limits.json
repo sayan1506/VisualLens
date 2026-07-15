@@ -6,6 +6,7 @@
   "maxTextChars": 240,
   "maxCalloutChars": 160,
   "maxArrayValues": 12,
+  "maxBarValues": 16,
   "maxCodeLines": 14,
   "maxPointers": 4,
   "maxDescriptionChars": 200,
@@ -15,6 +16,7 @@
   "defaultCanvas": { "width": 1280, "height": 720 },
   "templates": ["title", "concept", "array_state", "code_walk"],
   "colors": ["orange", "blue", "green", "red"],
-  "componentTypes": ["title_block", "text", "callout", "array_block", "code_panel", "state_panel", "tree", "graph"],
-  "calloutVariants": ["info", "warn", "success"]
+  "componentTypes": ["title_block", "text", "callout", "array_block", "code_panel", "state_panel", "tree", "graph", "bar_chart"],
+  "calloutVariants": ["info", "warn", "success"],
+  "difficulties": ["easy", "medium", "hard"]
 }

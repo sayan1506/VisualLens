@@ -26,7 +26,10 @@ export default function SlideFrame({
       style={{ width, height, background: 'var(--vl-bg)', color: 'var(--vl-text)' }}
     >
       <div className="absolute inset-0" style={{ background: 'var(--vl-bg-gradient)' }} />
-      <div className="relative h-full w-full px-16 py-12">{children}</div>
+      {/* No inset here: zoned layouts span edge-to-edge (header/strip), while
+          framing templates (title/concept) add their own px-16 py-12 in
+          SlideRenderer. */}
+      <div className="relative h-full w-full">{children}</div>
     </div>
   )
 }

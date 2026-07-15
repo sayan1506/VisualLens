@@ -1,40 +1,16 @@
-import type { ComponentInstance, Slide } from '../types/deck'
+import type { DeckMeta, Slide, TemplateId } from '../types/deck'
 import SlideFrame from '../components/SlideFrame'
-import TitleBlock from '../components/TitleBlock'
-import Text from '../components/Text'
-import Callout from '../components/Callout'
-import ArrayBlock from '../components/ArrayBlock'
-import CodePanel from '../components/CodePanel'
-import StatePanel from '../components/StatePanel'
-import Tree from '../components/Tree'
-import Graph from '../components/Graph'
+import ScoreboardLayout from './ScoreboardLayout'
+import { renderComponent } from './renderComponent'
 import { TemplateLayout } from './templates'
 
-// `id` and `description` live on the component INSTANCE, not in `props`, so they
-// are passed explicitly (the {...c.props} spread would miss them). The React key
-// is the stable `id` when present — this is what makes the scoreboard work:
-// stepping between a scene's flattened slides reconciles same-id nodes and
-// patches their values in place instead of remounting.
-function renderComponent(c: ComponentInstance, key: string | number) {
-  const description = c.description
-  switch (c.type) {
-    case 'title_block':
-      return <TitleBlock key={key} description={description} {...c.props} />
-    case 'text':
-      return <Text key={key} description={description} {...c.props} />
-    case 'callout':
-      return <Callout key={key} description={description} {...c.props} />
-    case 'array_block':
-      return <ArrayBlock key={key} description={description} {...c.props} />
-    case 'code_panel':
-      return <CodePanel key={key} description={description} {...c.props} />
-    case 'state_panel':
-      return <StatePanel key={key} description={description} {...c.props} />
-    case 'tree':
-      return <Tree key={key} description={description} {...c.props} />
-    case 'graph':
-      return <Graph key={key} description={description} {...c.props} />
-  }
+// Zoned (docked scoreboard) templates partition components by role; framing
+// templates keep the centered, order-based TemplateLayout.
+const ZONED: Record<TemplateId, boolean> = {
+  title: false,
+  concept: false,
+  array_state: true,
+  code_walk: true,
 }
 
 interface SlideRendererProps {
@@ -42,14 +18,36 @@ interface SlideRendererProps {
   width?: number
   height?: number
   theme?: 'dark' | 'light'
+  deckMeta?: Pick<DeckMeta, 'title'>
+  stepIndex?: number
+  stepTotal?: number
 }
 
-export default function SlideRenderer({ slide, width, height, theme }: SlideRendererProps) {
+export default function SlideRenderer({
+  slide,
+  width,
+  height,
+  theme,
+  deckMeta,
+  stepIndex,
+  stepTotal,
+}: SlideRendererProps) {
   return (
     <SlideFrame width={width} height={height} theme={theme}>
-      <TemplateLayout template={slide.template}>
-        {slide.components.map((c, i) => renderComponent(c, c.id ?? i))}
-      </TemplateLayout>
+      {ZONED[slide.template] ? (
+        <ScoreboardLayout
+          components={slide.components}
+          deckMeta={deckMeta}
+          stepIndex={stepIndex}
+          stepTotal={stepTotal}
+        />
+      ) : (
+        <div className="h-full w-full px-16 py-12">
+          <TemplateLayout template={slide.template}>
+            {slide.components.map((c, i) => renderComponent(c, c.id ?? i))}
+          </TemplateLayout>
+        </div>
+      )}
     </SlideFrame>
   )
 }

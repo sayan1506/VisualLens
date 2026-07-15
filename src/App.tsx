@@ -32,7 +32,13 @@ function SingleSlide({
       style={{ background: 'var(--vl-page-bg)' }}
     >
       <div className="shadow-2xl ring-1" style={{ '--tw-ring-color': 'var(--vl-ring)' } as CSSProperties}>
-        <SlideRenderer slide={slides[clamped]} theme={theme} />
+        <SlideRenderer
+          slide={slides[clamped]}
+          theme={theme}
+          deckMeta={deck.meta}
+          stepIndex={clamped}
+          stepTotal={slides.length}
+        />
       </div>
     </div>
   )

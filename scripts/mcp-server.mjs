@@ -110,6 +110,8 @@ const deckSchema = z
       problem_id: z.string().optional(),
       title: z.string(),
       canvas: z.object({ width: z.number(), height: z.number() }).optional(),
+      difficulty: z.enum(schema.difficulties).optional(),
+      complexity: z.object({ time: z.string().optional(), space: z.string().optional() }).optional(),
     }),
     slides: z.array(slide).min(1).optional(),
     scenes: z.array(scene).min(1).optional(),

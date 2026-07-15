@@ -9,6 +9,8 @@ export type ColorName = 'orange' | 'blue' | 'green' | 'red'
 
 export type TemplateId = 'title' | 'concept' | 'array_state' | 'code_walk'
 
+export type Difficulty = 'easy' | 'medium' | 'hard'
+
 export interface Pointer {
   label: string
   index: number
@@ -39,6 +41,22 @@ export interface ArrayBlockProps {
   pointers?: Pointer[]
   label?: string
   notes?: (string | null)[] // per-box hover text, parallel to values; null/absent → default
+  colors?: (ColorName | null)[] // per-box fill tint, parallel to values (Dutch-flag / bucket coloring); null → default
+}
+
+// A histogram / bar chart. Bar height is proportional to its numeric value.
+// Shares the array pointer model (labeled carets that glide between columns).
+// `overlay` shades the span [from..to] as a filled region (e.g. the water a
+// container holds); `maxLine` draws a horizontal reference line at a value
+// (e.g. the running best area / max height seen so far).
+export interface BarChartProps {
+  values: number[]
+  highlighted?: number[]
+  pointers?: Pointer[]
+  label?: string
+  notes?: (string | null)[]
+  overlay?: { from: number; to: number; label?: string }
+  maxLine?: { value: number; label?: string }
 }
 
 export interface CodePanelProps {
@@ -117,6 +135,7 @@ export type ComponentInstance = WithMeta<
   | { type: 'state_panel'; props: StatePanelProps }
   | { type: 'tree'; props: TreeProps }
   | { type: 'graph'; props: GraphProps }
+  | { type: 'bar_chart'; props: BarChartProps }
 >
 
 export type ComponentType = ComponentInstance['type']
@@ -155,6 +174,8 @@ export interface DeckMeta {
   problem_id: string
   title: string
   canvas: { width: number; height: number }
+  difficulty?: Difficulty // optional framing chip in the header band
+  complexity?: { time?: string; space?: string } // optional Big-O chips, e.g. { time: "O(n)", space: "O(1)" }
 }
 
 export interface Deck {

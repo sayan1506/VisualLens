@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "problem_id": "11",
+    "title": "Container With Most Water",
+    "canvas": { "width": 1280, "height": 720 },
+    "difficulty": "medium",
+    "complexity": { "time": "O(n)", "space": "O(1)" }
+  },
+  "slides": [
+    {
+      "id": "t",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Container With Most Water",
+            "subtitle": "Two pointers from the ends — move the shorter wall inward"
+          }
+        }
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "id": "walk",
+      "template": "code_walk",
+      "components": [
+        {
+          "id": "bars",
+          "type": "bar_chart",
+          "description": "Each bar is a vertical wall of the given height. The shaded region is the water the current pair of walls holds.",
+          "props": {
+            "values": [1, 8, 6, 2, 5, 4, 8, 3, 7],
+            "label": "height"
+          }
+        },
+        {
+          "id": "code",
+          "type": "code_panel",
+          "description": "The area between two walls is limited by the shorter wall, so moving the shorter wall inward is the only move that can improve the area.",
+          "props": {
+            "title": "Two pointers",
+            "lines": [
+              "left = 0, right = n - 1",
+              "best = 0",
+              "while left < right:",
+              "  h = min(height[left], height[right])",
+              "  best = max(best, h * (right - left))",
+              "  if height[left] < height[right]: left += 1",
+              "  else: right -= 1",
+              "return best"
+            ]
+          }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "description": "left/right pointers, the area of the current pair, and the best area seen so far.",
+          "props": { "title": "State", "vars": { "n": 9 } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "k1",
+          "caption": "left=0, right=8. Water level = min(1, 7) = 1, width = 8. area = 8.",
+          "patch": {
+            "bars": {
+              "highlighted": [0, 8],
+              "pointers": [
+                { "label": "L", "index": 0, "color": "orange" },
+                { "label": "R", "index": 8, "color": "blue" }
+              ],
+              "overlay": { "from": 0, "to": 8, "label": "area = 8" },
+              "maxLine": { "value": 1, "label": "level 1" }
+            },
+            "code": { "activeLine": 4 },
+            "st": { "vars": { "n": 9, "left": 0, "right": 8, "area": 8, "best": 8 } }
+          }
+        },
+        {
+          "id": "k2",
+          "variant": "success",
+          "caption": "height[0]=1 is the short wall, so move L inward. left=1: min(8,7)=7, width=7. area = 49.",
+          "patch": {
+            "bars": {
+              "highlighted": [1, 8],
+              "pointers": [
+                { "label": "L", "index": 1, "color": "orange" },
+                { "label": "R", "index": 8, "color": "blue" }
+              ],
+              "overlay": { "from": 1, "to": 8, "label": "area = 49" },
+              "maxLine": { "value": 7, "label": "level 7" }
+            },
+            "code": { "activeLine": 5 },
+            "st": { "vars": { "n": 9, "left": 1, "right": 8, "area": 49, "best": 49 } }
+          }
+        },
+        {
+          "id": "k3",
+          "caption": "Now height[8]=7 is shorter, so move R inward. right=7: min(8,3)=3, width=6. area = 18 — best stays 49.",
+          "patch": {
+            "bars": {
+              "highlighted": [1, 7],
+              "pointers": [
+                { "label": "L", "index": 1, "color": "orange" },
+                { "label": "R", "index": 7, "color": "blue" }
+              ],
+              "overlay": { "from": 1, "to": 7, "label": "area = 18" },
+              "maxLine": { "value": 3, "label": "level 3" }
+            },
+            "code": { "activeLine": 6 },
+            "st": { "vars": { "n": 9, "left": 1, "right": 7, "area": 18, "best": 49 } }
+          }
+        },
+        {
+          "id": "k4",
+          "variant": "success",
+          "caption": "The pointers keep converging; no narrower gap can beat it. Answer: 49.",
+          "patch": {
+            "bars": {
+              "highlighted": [1, 8],
+              "pointers": [
+                { "label": "L", "index": 1, "color": "orange" },
+                { "label": "R", "index": 8, "color": "blue" }
+              ],
+              "overlay": { "from": 1, "to": 8, "label": "best = 49" },
+              "maxLine": { "value": 7, "label": "level 7" }
+            },
+            "code": { "activeLine": 7 },
+            "st": { "vars": { "n": 9, "left": 1, "right": 8, "area": 49, "best": 49 } }
+          }
+        }
+      ]
+    }
+  ]
+}

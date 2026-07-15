@@ -16,19 +16,19 @@ export default function CodePanel({
     >
       {title && (
         <div
-          className="border-b px-5 py-2 text-sm font-medium"
+          className="border-b px-4 py-2 text-xs font-medium uppercase tracking-wide"
           style={{ borderColor: 'var(--vl-border)', color: 'var(--vl-text-muted)' }}
         >
           {title}
         </div>
       )}
-      <pre className="p-5 font-mono text-lg leading-relaxed">
+      <pre className="p-4 font-mono text-sm leading-6">
         {lines.map((line, i) => {
           const active = i === activeLine
           return (
             <div
               key={i}
-              className="flex gap-4 rounded px-2"
+              className="flex gap-3 rounded px-2"
               style={{
                 backgroundColor: active ? 'var(--vl-accent-soft)' : 'transparent',
                 transition: 'background-color 300ms ease',

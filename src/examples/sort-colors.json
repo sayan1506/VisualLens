@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "problem_id": "75",
+    "title": "Sort Colors",
+    "canvas": { "width": 1280, "height": 720 },
+    "difficulty": "medium",
+    "complexity": { "time": "O(n)", "space": "O(1)" }
+  },
+  "slides": [
+    {
+      "id": "t",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Sort Colors",
+            "subtitle": "Dutch National Flag — three pointers, one pass, in place"
+          }
+        }
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "id": "walk",
+      "template": "code_walk",
+      "components": [
+        {
+          "id": "arr",
+          "type": "array_block",
+          "description": "The array of 0s (red), 1s (green), 2s (blue). low/mid/high partition it into sorted regions as mid scans.",
+          "props": {
+            "values": [2, 0, 2, 1, 1, 0],
+            "label": "nums",
+            "colors": ["blue", "red", "blue", "green", "green", "red"]
+          }
+        },
+        {
+          "id": "code",
+          "type": "code_panel",
+          "description": "Everything left of low is 0, everything right of high is 2, and low..mid-1 is 1. mid walks the unknown region.",
+          "props": {
+            "title": "Dutch National Flag",
+            "lines": [
+              "low = 0, mid = 0, high = n - 1",
+              "while mid <= high:",
+              "  if nums[mid] == 0:",
+              "    swap(low, mid); low++; mid++",
+              "  elif nums[mid] == 1:",
+              "    mid++",
+              "  else:",
+              "    swap(mid, high); high--"
+            ]
+          }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "description": "The three partition pointers.",
+          "props": { "title": "State", "vars": { "n": 6 } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "k1",
+          "caption": "low=mid=0, high=5. nums[mid]=2 → swap with high, high--. mid stays (unknown value swapped in).",
+          "patch": {
+            "arr": {
+              "values": [0, 0, 2, 1, 1, 2],
+              "colors": ["red", "red", "blue", null, null, "blue"],
+              "pointers": [
+                { "label": "lo", "index": 0, "color": "orange" },
+                { "label": "mid", "index": 0, "color": "green" },
+                { "label": "hi", "index": 4, "color": "blue" }
+              ]
+            },
+            "code": { "activeLine": 7 },
+            "st": { "vars": { "n": 6, "low": 0, "mid": 0, "high": 4 } }
+          }
+        },
+        {
+          "id": "k2",
+          "caption": "nums[mid]=0 → swap with low, both advance. The 0 is locked into the red region.",
+          "patch": {
+            "arr": {
+              "values": [0, 0, 2, 1, 1, 2],
+              "colors": ["red", "red", "blue", null, null, "blue"],
+              "highlighted": [0],
+              "pointers": [
+                { "label": "lo", "index": 1, "color": "orange" },
+                { "label": "mid", "index": 1, "color": "green" },
+                { "label": "hi", "index": 4, "color": "blue" }
+              ]
+            },
+            "code": { "activeLine": 3 },
+            "st": { "vars": { "n": 6, "low": 1, "mid": 1, "high": 4 } }
+          }
+        },
+        {
+          "id": "k3",
+          "caption": "nums[mid]=0 again → swap with low, both advance.",
+          "patch": {
+            "arr": {
+              "values": [0, 0, 2, 1, 1, 2],
+              "colors": ["red", "red", "blue", null, null, "blue"],
+              "highlighted": [1],
+              "pointers": [
+                { "label": "lo", "index": 2, "color": "orange" },
+                { "label": "mid", "index": 2, "color": "green" },
+                { "label": "hi", "index": 4, "color": "blue" }
+              ]
+            },
+            "code": { "activeLine": 3 },
+            "st": { "vars": { "n": 6, "low": 2, "mid": 2, "high": 4 } }
+          }
+        },
+        {
+          "id": "k4",
+          "variant": "success",
+          "caption": "Continuing the scan sorts the rest: reds, then whites, then blues. Fully partitioned in one pass.",
+          "patch": {
+            "arr": {
+              "values": [0, 0, 1, 1, 2, 2],
+              "colors": ["red", "red", "green", "green", "blue", "blue"],
+              "highlighted": [],
+              "pointers": [
+                { "label": "lo", "index": 2, "color": "orange" },
+                { "label": "mid", "index": 4, "color": "green" },
+                { "label": "hi", "index": 3, "color": "blue" }
+              ]
+            },
+            "code": { "activeLine": 1 },
+            "st": { "vars": { "n": 6, "low": 2, "mid": 4, "high": 3 } }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -95,7 +95,13 @@ export default function Player({ deck }: { deck: Deck }) {
             }}
             className="absolute left-0 top-0 overflow-hidden rounded-lg shadow-2xl ring-1"
           >
-            <SlideRenderer slide={slides[i]} theme={theme} />
+            <SlideRenderer
+              slide={slides[i]}
+              theme={theme}
+              deckMeta={deck.meta}
+              stepIndex={i}
+              stepTotal={n}
+            />
           </div>
         </div>
 

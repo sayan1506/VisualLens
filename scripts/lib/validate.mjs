@@ -11,6 +11,7 @@ const TEMPLATES = schema.templates
 const COLORS = schema.colors
 const COMPONENT_TYPES = schema.componentTypes
 const CALLOUT_VARIANTS = schema.calloutVariants
+const DIFFICULTIES = schema.difficulties
 
 // Structural checks for scene/steps. Bounds on patched props (values length,
 // highlighted/pointer indices) are NOT checked here — they're caught by the
@@ -73,6 +74,17 @@ export function validateDeck(deck) {
     const c = deck.meta.canvas
     if (!c || typeof c.width !== 'number' || typeof c.height !== 'number')
       err('meta.canvas must have numeric width and height')
+    if (deck.meta.difficulty !== undefined && !DIFFICULTIES.includes(deck.meta.difficulty))
+      err(`meta.difficulty must be one of ${DIFFICULTIES.join(', ')}`)
+    if (deck.meta.complexity !== undefined) {
+      const cx = deck.meta.complexity
+      if (!cx || typeof cx !== 'object' || Array.isArray(cx))
+        err('meta.complexity must be an object { time?, space? }')
+      else {
+        if (cx.time !== undefined && typeof cx.time !== 'string') err('meta.complexity.time must be a string')
+        if (cx.space !== undefined && typeof cx.space !== 'string') err('meta.complexity.space must be a string')
+      }
+    }
   }
 
   // Scene decks: validate structure first (clean scene/step-referenced errors),
@@ -176,6 +188,69 @@ export function validateDeck(deck) {
                   err(`${cat}: notes[${ni}] exceeds ${LIMITS.maxDescriptionChars} chars`)
               })
             }
+          }
+          if (p.colors !== undefined) {
+            if (!Array.isArray(p.colors)) err(`${cat}: colors must be an array parallel to values`)
+            else {
+              if (p.colors.length > n)
+                err(`${cat}: colors has more entries (${p.colors.length}) than values (${n})`)
+              p.colors.forEach((col, ni) => {
+                if (col !== null && !COLORS.includes(col))
+                  err(`${cat}: colors[${ni}] must be null or one of ${COLORS.join(', ')}`)
+              })
+            }
+          }
+          break
+        }
+        case 'bar_chart': {
+          if (!Array.isArray(p.values) || p.values.length === 0)
+            return err(`${cat}: bar_chart requires non-empty props.values`)
+          if (p.values.length > LIMITS.maxBarValues)
+            err(`${cat}: values exceeds ${LIMITS.maxBarValues} elements`)
+          const n = p.values.length
+          p.values.forEach((v, vi) => {
+            if (typeof v !== 'number') err(`${cat}: values[${vi}] must be a number (bar height)`)
+          })
+          if (p.highlighted !== undefined) {
+            if (!Array.isArray(p.highlighted)) err(`${cat}: highlighted must be an array`)
+            else
+              p.highlighted.forEach((h) => {
+                if (typeof h !== 'number' || h < 0 || h >= n)
+                  err(`${cat}: highlighted index ${h} out of bounds (0..${n - 1})`)
+              })
+          }
+          if (p.pointers !== undefined) {
+            if (!Array.isArray(p.pointers)) err(`${cat}: pointers must be an array`)
+            else {
+              if (p.pointers.length > LIMITS.maxPointers)
+                err(`${cat}: too many pointers (max ${LIMITS.maxPointers})`)
+              p.pointers.forEach((ptr) => {
+                if (!ptr.label) err(`${cat}: a pointer is missing label`)
+                if (typeof ptr.index !== 'number' || ptr.index < 0 || ptr.index >= n)
+                  err(`${cat}: pointer "${ptr.label}" index ${ptr.index} out of bounds (0..${n - 1})`)
+                if (!COLORS.includes(ptr.color))
+                  err(`${cat}: pointer "${ptr.label}" color must be one of ${COLORS.join(', ')}`)
+              })
+            }
+          }
+          if (p.overlay !== undefined) {
+            const o = p.overlay
+            if (!o || typeof o !== 'object') err(`${cat}: overlay must be an object { from, to, label? }`)
+            else {
+              if (typeof o.from !== 'number' || o.from < 0 || o.from >= n)
+                err(`${cat}: overlay.from ${o.from} out of bounds (0..${n - 1})`)
+              if (typeof o.to !== 'number' || o.to < 0 || o.to >= n)
+                err(`${cat}: overlay.to ${o.to} out of bounds (0..${n - 1})`)
+            }
+          }
+          if (p.maxLine !== undefined) {
+            if (!p.maxLine || typeof p.maxLine !== 'object' || typeof p.maxLine.value !== 'number')
+              err(`${cat}: maxLine must be an object { value:number, label? }`)
+          }
+          if (p.notes !== undefined) {
+            if (!Array.isArray(p.notes)) err(`${cat}: notes must be an array parallel to values`)
+            else if (p.notes.length > n)
+              err(`${cat}: notes has more entries (${p.notes.length}) than values (${n})`)
           }
           break
         }

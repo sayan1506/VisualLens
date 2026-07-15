@@ -50,6 +50,8 @@ function sanitizeStep(step) {
   // Optional author overrides. Whitelisted here so they actually reach buildDeck
   // — anything not copied out is dropped, which previously silently swallowed these.
   if (Array.isArray(step.notes)) out.notes = step.notes.map((n) => (n == null ? null : String(n)))
+  if (Array.isArray(step.colors))
+    out.colors = step.colors.map((c) => (COLORS.includes(c) ? c : null))
   if (step.descriptions && typeof step.descriptions === 'object') {
     const d = {}
     for (const k of ['array', 'state', 'code', 'tree', 'graph']) {
