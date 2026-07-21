@@ -1,6 +1,6 @@
 # VisualLens
 
-Turn any array algorithm into a step-by-step visual explainer — as PNG slides or an interactive player — driven by your own AI assistant.
+Turn any array, tree, or graph algorithm into a step-by-step visual explainer — as PNG slides or an interactive player — driven by your own AI assistant.
 
 VisualLens is an [MCP](https://modelcontextprotocol.io) server. You ask Claude (or any MCP-capable host) to "visualize binary search," Claude produces a structured slide deck, and VisualLens renders it into polished slides using a fixed catalog of hand-designed React components. No API keys, no paid services — the intelligence comes from the AI host you already use.
 
@@ -35,15 +35,17 @@ npm run build                     # produces dist/ — the server renders from t
 
 ## Quick start (no AI needed)
 
-Prove the pipeline works before wiring up Claude. Three example decks ship in `src/examples/`:
+Prove the pipeline works before wiring up Claude. Several example decks ship in `src/examples/`:
 
 ```bash
 # Render a deck to PNG slides → out/two-sum-ii/slide-01.png ...
 npm run deck two-sum-ii
 
 # Open the same deck in the interactive player (browser)
-npm run play two-sum-ii          # also: binary-search, two-sum-scene
+npm run play two-sum-ii
 ```
+
+Available examples: `two-sum-ii`, `binary-search`, `two-sum-scene`, `container-with-most-water`, `sort-colors`, `tree-max-depth`, `graph-bfs`. The last two exercise the tree and graph visualizers; `container-with-most-water` uses the bar-chart component.
 
 `two-sum-scene` demonstrates the **scene** model: instead of a fresh slide per step, the components are declared once and each step patches their props, so the player animates values in place across the walkthrough.
 
@@ -86,17 +88,21 @@ Slides land in `out/<slug>/`. The tool's reply includes a `npm run play <slug>` 
 
 ## What works well
 
-Best on **single-array, clearly multi-step** algorithms:
+Best on **clearly multi-step** algorithms over a single structure:
 
 - Two pointers — Two Sum II, Container With Most Water
 - Running state — Best Time to Buy/Sell Stock, Kadane's maximum subarray
 - Sliding window — longest substring, window maximum
-- Sorting — bubble / insertion / selection (lots of steps = rich decks)
+- Sorting — bubble / insertion / selection, Dutch National Flag (lots of steps = rich decks)
+- Trees — DFS/BFS traversals, max depth (binary tree as a level-order array)
+- Graphs — BFS/DFS, shortest-path walks over a hand-laid-out node set
 
 ## Current limitations
 
-- **Array-shaped visuals only.** The component catalog covers arrays, pointers, code, state, callouts, and text. There is **no tree, graph, linked-list, DP-grid, or stack** visualizer yet — those problems fall back to awkward array/text slides.
-- **One array at a time.** Two-structure problems (e.g. Median of Two Sorted Arrays, merging two lists) can't be drawn properly yet.
+- **Fixed catalog of shapes.** The component catalog covers arrays, bar charts, binary trees, graphs, pointers, code, state, callouts, and text. There is still **no linked-list, DP-grid, or stack** visualizer — those problems fall back to awkward array/text slides.
+- **One structure at a time.** Each run visualizes a single array, tree, *or* graph. Two-structure problems (e.g. Median of Two Sorted Arrays, merging two lists) can't be drawn properly yet.
+- **Trees are binary + level-order.** A tree is supplied as a LeetCode-style level-order array (index 0 = root, children of `i` at `2i+1`/`2i+2`). N-ary trees aren't supported.
+- **Graph layout is manual.** Node positions are normalized `x`/`y` coordinates the host LLM chooses — there is no automatic graph layout.
 - **Slide count follows the algorithm.** The deck is `title + intro + one slide per recorded step + outro`. Binary search on a small array is ~3 steps, so you get ~6 slides. Use a larger input or a step-heavier algorithm for more.
 - **No video / audio.** Output is PNGs and the interactive player only.
 - **Local-only trust model.** `render_algorithm_from_code` runs AI-written JS in a `node:vm` + worker sandbox with a timeout. That's fine for your own machine; it is **not** hardened for a public/remote deployment.
@@ -123,7 +129,7 @@ Best on **single-array, clearly multi-step** algorithms:
 
 ```
 src/
-  components/       preloaded render catalog (ArrayBlock, CodePanel, StatePanel, ...)
+  components/       preloaded render catalog (ArrayBlock, BarChart, Tree, Graph, CodePanel, StatePanel, ...)
   slides/           SlideRenderer + template layouts
   types/deck.ts     the deck JSON schema (AI ↔ renderer contract)
   schema/limits.json  single source of truth for limits + enum lists
