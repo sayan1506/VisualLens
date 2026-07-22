@@ -45,6 +45,10 @@ export function flattenScene(scene) {
       template: scene.template,
       components,
       narration: step.narration || '',
+      // Stamp scene identity so the Player can group step-slides into approach
+      // tabs and the header can show the active approach label.
+      sceneId: scene.id,
+      ...(scene.label ? { approachLabel: scene.label } : {}),
     }
   })
 }

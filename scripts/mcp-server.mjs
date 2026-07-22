@@ -101,6 +101,7 @@ const step = z.object({
 const scene = z.object({
   id: z.string(),
   template: z.enum(schema.templates),
+  label: z.string().optional(),
   components: z.array(component).min(1),
   steps: z.array(step).min(1),
 })

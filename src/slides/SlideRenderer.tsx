@@ -18,7 +18,7 @@ interface SlideRendererProps {
   width?: number
   height?: number
   theme?: 'dark' | 'light'
-  deckMeta?: Pick<DeckMeta, 'title'>
+  deckMeta?: Pick<DeckMeta, 'title' | 'difficulty' | 'complexity'>
   stepIndex?: number
   stepTotal?: number
 }
@@ -38,6 +38,7 @@ export default function SlideRenderer({
         <ScoreboardLayout
           components={slide.components}
           deckMeta={deckMeta}
+          approachLabel={slide.approachLabel}
           stepIndex={stepIndex}
           stepTotal={stepTotal}
         />

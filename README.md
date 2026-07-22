@@ -17,6 +17,10 @@ There are two tools:
 
 > Note on "guaranteed correct": the sandbox guarantees the slides match what the code computed — it does **not** guarantee the algorithm Claude wrote is bug-free. On genuinely hard problems Claude can still write buggy code, and the slides will faithfully show the buggy result.
 
+### What a walkthrough step looks like
+
+Each step renders as a **docked scoreboard**: a header band (problem title, optional difficulty badge and Big-O chips, step counter), the visualization on the left, the code and state panels docked on the right, and the step's plain-English caption in a strip along the bottom — all on screen at once, so a learner reads the code, the values, and the picture together. The visualization scales to fit its zone, so large arrays and long code lines never clip. Decks that show multiple approaches (brute force → optimized) surface them as approach tabs in the player. Title and intro/outro slides keep a simpler centered layout.
+
 ## Prerequisites
 
 - **Node.js 20+** (developed on Node 22)
@@ -45,11 +49,11 @@ npm run deck two-sum-ii
 npm run play two-sum-ii
 ```
 
-Available examples: `two-sum-ii`, `binary-search`, `two-sum-scene`, `container-with-most-water`, `sort-colors`, `tree-max-depth`, `graph-bfs`. The last two exercise the tree and graph visualizers; `container-with-most-water` uses the bar-chart component.
+Available examples: `two-sum-ii`, `binary-search`, `two-sum-scene`, `two-sum-approaches`, `container-with-most-water`, `sort-colors`, `tree-max-depth`, `graph-bfs`. `tree-max-depth` and `graph-bfs` exercise the tree and graph visualizers; `container-with-most-water` uses the bar-chart component; `sort-colors` uses per-cell value coloring (Dutch National Flag).
 
-`two-sum-scene` demonstrates the **scene** model: instead of a fresh slide per step, the components are declared once and each step patches their props, so the player animates values in place across the walkthrough.
+`two-sum-scene` demonstrates the **scene** model: instead of a fresh slide per step, the components are declared once and each step patches their props, so the player animates values in place across the walkthrough. `two-sum-approaches` shows **multiple approaches** in one deck (brute force → two pointers), which the player surfaces as approach tabs.
 
-In the player: **←/→** or **Space** to navigate, **Play** to auto-advance, click the dots to jump. `Ctrl+C` in the terminal to stop.
+In the player: **←/→** or **Space** to navigate, **Play** to auto-advance, click the dots to jump, and click an approach tab (on multi-approach decks) to switch solutions. `Ctrl+C` in the terminal to stop.
 
 ## Connect to Claude Desktop
 

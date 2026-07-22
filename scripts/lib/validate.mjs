@@ -22,6 +22,8 @@ function validateScenes(deck, err) {
     if (!scene.id) err(`${at}: missing id`)
     if (!TEMPLATES.includes(scene.template))
       err(`${at}: invalid template "${scene.template}" (allowed: ${TEMPLATES.join(', ')})`)
+    if (scene.label !== undefined && (typeof scene.label !== 'string' || scene.label.length > LIMITS.maxTitleChars))
+      err(`${at}: label must be a string up to ${LIMITS.maxTitleChars} chars`)
 
     const ids = new Set()
     if (!Array.isArray(scene.components) || scene.components.length === 0) {

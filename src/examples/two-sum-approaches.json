@@ -1,0 +1,172 @@
+{
+  "meta": {
+    "problem_id": "167",
+    "title": "Two Sum II",
+    "canvas": { "width": 1280, "height": 720 },
+    "difficulty": "medium",
+    "complexity": { "time": "O(n)", "space": "O(1)" }
+  },
+  "slides": [
+    {
+      "id": "t",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Two Sum II",
+            "subtitle": "Sorted input — brute force first, then the two-pointer optimum."
+          }
+        }
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "id": "brute",
+      "template": "code_walk",
+      "label": "Brute force",
+      "components": [
+        {
+          "id": "arr",
+          "type": "array_block",
+          "description": "Sorted input array. Brute force tries every pair (i, j).",
+          "props": { "values": [2, 7, 11, 15], "label": "numbers" }
+        },
+        {
+          "id": "code",
+          "type": "code_panel",
+          "description": "Two nested loops test every pair — O(n^2).",
+          "props": {
+            "title": "Every pair",
+            "lines": [
+              "for i in 0..n-1:",
+              "  for j in i+1..n-1:",
+              "    if a[i] + a[j] == target:",
+              "      return [i, j]",
+              "    if a[i] + a[j] > target:",
+              "      break"
+            ]
+          }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "props": { "title": "State", "vars": { "target": 9 } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "b1",
+          "caption": "Fix i = 0 (value 2). Scan j to its right looking for a partner that sums to 9.",
+          "patch": {
+            "arr": {
+              "pointers": [
+                { "label": "i", "index": 0, "color": "orange" },
+                { "label": "j", "index": 1, "color": "blue" }
+              ]
+            },
+            "code": { "activeLine": 2 },
+            "st": { "vars": { "target": 9, "i": 0, "j": 1, "sum": 9 } }
+          }
+        },
+        {
+          "id": "b2",
+          "variant": "success",
+          "caption": "a[0] + a[1] = 2 + 7 = 9 = target. Found the pair — but we may scan many pairs first.",
+          "patch": {
+            "arr": {
+              "highlighted": [0, 1],
+              "pointers": [
+                { "label": "i", "index": 0, "color": "orange" },
+                { "label": "j", "index": 1, "color": "blue" }
+              ]
+            },
+            "code": { "activeLine": 3 },
+            "st": { "vars": { "target": 9, "i": 0, "j": 1, "sum": 9 } }
+          }
+        }
+      ]
+    },
+    {
+      "id": "twoptr",
+      "template": "code_walk",
+      "label": "Two pointers",
+      "components": [
+        {
+          "id": "arr2",
+          "type": "array_block",
+          "description": "Because the array is sorted, one pointer from each end converges in a single pass.",
+          "props": { "values": [2, 7, 11, 15], "label": "numbers" }
+        },
+        {
+          "id": "code2",
+          "type": "code_panel",
+          "description": "Move the pointer that brings the sum toward target — O(n), O(1) space.",
+          "props": {
+            "title": "Two pointers",
+            "lines": [
+              "left = 0, right = n - 1",
+              "while left < right:",
+              "  sum = a[left] + a[right]",
+              "  if sum == target: return [left, right]",
+              "  elif sum > target: right -= 1",
+              "  else: left += 1"
+            ]
+          }
+        },
+        {
+          "id": "st2",
+          "type": "state_panel",
+          "props": { "title": "State", "vars": { "target": 9 } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "p1",
+          "caption": "left=0, right=3. sum = 2 + 15 = 17 > 9, so pull right inward.",
+          "patch": {
+            "arr2": {
+              "pointers": [
+                { "label": "L", "index": 0, "color": "orange" },
+                { "label": "R", "index": 3, "color": "blue" }
+              ]
+            },
+            "code2": { "activeLine": 4 },
+            "st2": { "vars": { "target": 9, "left": 0, "right": 3, "sum": 17 } }
+          }
+        },
+        {
+          "id": "p2",
+          "caption": "sum = 2 + 11 = 13 > 9, still too big. Pull right in again.",
+          "patch": {
+            "arr2": {
+              "pointers": [
+                { "label": "L", "index": 0, "color": "orange" },
+                { "label": "R", "index": 2, "color": "blue" }
+              ]
+            },
+            "code2": { "activeLine": 4 },
+            "st2": { "vars": { "target": 9, "left": 0, "right": 2, "sum": 13 } }
+          }
+        },
+        {
+          "id": "p3",
+          "variant": "success",
+          "caption": "sum = 2 + 7 = 9 = target. Answer found in one pass, no extra space.",
+          "patch": {
+            "arr2": {
+              "highlighted": [0, 1],
+              "pointers": [
+                { "label": "L", "index": 0, "color": "orange" },
+                { "label": "R", "index": 1, "color": "blue" }
+              ]
+            },
+            "code2": { "activeLine": 3 },
+            "st2": { "vars": { "target": 9, "left": 0, "right": 1, "sum": 9 } }
+          }
+        }
+      ]
+    }
+  ]
+}

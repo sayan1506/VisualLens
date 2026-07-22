@@ -25,6 +25,26 @@ export default function Player({ deck }: { deck: Deck }) {
 
   const go = useCallback((next: number) => setI(() => Math.max(0, Math.min(next, n - 1))), [n])
 
+  // Group step-slides into approaches (brute force → optimized …) by the scene
+  // identity flattenScene stamped on each slide. Only labeled scenes become
+  // tabs; a deck with one approach (or none) shows no tab bar. Each tab jumps
+  // to its approach's first step.
+  const approaches = useMemo(() => {
+    const seen = new Map<string, { label: string; start: number }>()
+    slides.forEach((s, idx) => {
+      if (s.sceneId && s.approachLabel && !seen.has(s.sceneId))
+        seen.set(s.sceneId, { label: s.approachLabel, start: idx })
+    })
+    return [...seen.values()].sort((a, b) => a.start - b.start)
+  }, [slides])
+  const activeApproach = useMemo(() => {
+    let a = -1
+    approaches.forEach((ap, k) => {
+      if (i >= ap.start) a = k
+    })
+    return a
+  }, [approaches, i])
+
   // Scale the fixed-size canvas down to fit the viewport (never up past 1:1).
   useEffect(() => {
     const fit = () => {
@@ -82,6 +102,31 @@ export default function Player({ deck }: { deck: Deck }) {
         >
           {theme === 'dark' ? '☀ Light' : '☾ Dark'}
         </button>
+
+        {approaches.length > 1 && (
+          <div className="flex flex-wrap justify-center gap-2" data-approach-tabs>
+            {approaches.map((ap, k) => (
+              <button
+                key={ap.label}
+                onClick={() => go(ap.start)}
+                data-approach-tab
+                aria-pressed={k === activeApproach}
+                className={`${btn} border`}
+                style={
+                  k === activeApproach
+                    ? {
+                        borderColor: 'var(--vl-accent)',
+                        backgroundColor: 'var(--vl-accent-soft)',
+                        color: 'var(--vl-accent-text)',
+                      }
+                    : { borderColor: 'var(--vl-border)', color: 'var(--vl-text-muted)' }
+                }
+              >
+                {ap.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div style={{ width: width * scale, height: height * scale }} className="relative">
           <div

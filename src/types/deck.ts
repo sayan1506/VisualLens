@@ -147,6 +147,11 @@ export interface Slide {
   template: TemplateId
   components: ComponentInstance[]
   narration?: string // dormant — reserved for future TTS
+  // Stamped by flattenScene (not authored): which scene/approach this step-slide
+  // came from. Lets the Player group step-slides into approach tabs and lets the
+  // header band show the active approach label. Absent on leading framing slides.
+  sceneId?: string
+  approachLabel?: string
 }
 
 // ---- scene + steps (scoreboard authoring) ----
@@ -166,6 +171,7 @@ export interface Step {
 export interface Scene {
   id: string
   template: TemplateId
+  label?: string // approach name shown in the Player's approach tabs (e.g. "Brute force", "Two pointers")
   components: ComponentInstance[] // persistent tree; each component MUST have an id; props = initial state
   steps: Step[] // >= 1
 }

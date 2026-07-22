@@ -23,6 +23,7 @@ const difficultyStyle: Record<Difficulty, { bg: string; border: string; text: st
 interface ScoreboardLayoutProps {
   components: ComponentInstance[]
   deckMeta?: Pick<DeckMeta, 'title' | 'difficulty' | 'complexity'>
+  approachLabel?: string
   stepIndex?: number
   stepTotal?: number
 }
@@ -30,6 +31,7 @@ interface ScoreboardLayoutProps {
 export default function ScoreboardLayout({
   components,
   deckMeta,
+  approachLabel,
   stepIndex,
   stepTotal,
 }: ScoreboardLayoutProps) {
@@ -90,6 +92,18 @@ export default function ScoreboardLayout({
                   {deckMeta.difficulty}
                 </span>
               )}
+              {approachLabel && (
+                <span
+                  className="shrink-0 rounded-md border px-2.5 py-0.5 text-xs font-medium"
+                  style={{
+                    borderColor: 'var(--vl-accent)',
+                    backgroundColor: 'var(--vl-accent-soft)',
+                    color: 'var(--vl-accent-text)',
+                  }}
+                >
+                  {approachLabel}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -135,13 +149,24 @@ export default function ScoreboardLayout({
         )}
         {dock.length > 0 && (
           <div
-            className="flex shrink-0 flex-col justify-center gap-4 border-l p-6"
+            className="flex shrink-0 border-l p-6"
             style={{
               borderColor: 'var(--vl-border)',
-              width: viz.length > 0 ? 420 : '100%',
+              width: viz.length > 0 ? 440 : '100%',
             }}
           >
-            {dock.map((c, i) => renderComponent(c, c.id ?? `dock-${i}`))}
+            {/* Scale-to-fit the dock exactly like the viz zone: the content is
+                laid out at a comfortable natural width (long code lines fit),
+                then FitToWidth shrinks the whole stack to the dock box so
+                nothing clips in the fixed-size PNG. */}
+            <FitToWidth>
+              <div
+                className="flex flex-col gap-4"
+                style={{ width: viz.length > 0 ? 480 : '100%' }}
+              >
+                {dock.map((c, i) => renderComponent(c, c.id ?? `dock-${i}`))}
+              </div>
+            </FitToWidth>
           </div>
         )}
       </div>
