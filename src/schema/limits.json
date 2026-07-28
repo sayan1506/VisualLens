@@ -1,6 +1,6 @@
 {
-  "maxSlides": 40,
-  "maxSteps": 34,
+  "maxSlides": 64,
+  "maxSteps": 60,
   "maxTitleChars": 60,
   "maxSubtitleChars": 100,
   "maxTextChars": 240,

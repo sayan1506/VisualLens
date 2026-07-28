@@ -167,7 +167,14 @@ HOW TO BUILD A GOOD DECK:
 3. Every concrete value (sum, pointer positions, state vars) must be ACTUALLY CORRECT — trace the
    algorithm by hand or in code before emitting. Do not guess intermediate states.
 4. Keep each caption/callout to a single clear sentence about what changed this step.
-5. Prefer 6-15 steps. Hard cap 40 slides total (scene steps count as slides once flattened).
+5. TRACE THE ALGORITHM END TO END. Emit one step for EVERY meaningful iteration, from the
+   initial state to the final answer. Do NOT stop early, skip iterations, or summarize the
+   middle with "…". The viewer must see the COMPLETE run of the example, not a sample of it —
+   a walkthrough that ends before the algorithm finishes is the most common failure here.
+6. If a complete trace would exceed the ~60-step budget, do NOT truncate the walkthrough.
+   Instead SHRINK THE INPUT (use a smaller array / smaller n) so the ENTIRE algorithm still
+   runs start-to-finish within the cap. A full run on a small input beats a partial run on a
+   big one. Hard cap 64 slides total (scene steps count as slides once flattened).
 
 If the tool returns a validation error, fix exactly the listed problems and call it again.`
 
@@ -293,7 +300,16 @@ RULES:
 - record() BEFORE you mutate. For in-place algorithms (swaps, in-place writes), snapshot the step at the TOP of the iteration — before the swap/assignment — so the array, pointers, state, and caption all describe the SAME instant, and the change shows up on the next frame. Recording AFTER a swap produces a frame whose array is already updated but whose caption/state still describe the old values (a self-contradicting slide).
 - Add ONE final record() after the loop for in-place algorithms. Because each step is captured before its mutation, the LAST mutation has no following frame — without a terminal record() the deck ends on the pre-final-swap array (e.g. a sort that looks unfinished). The final record() shows the completed result.
 - Keep it synchronous and finite. Execution is time-limited; infinite loops are killed.
-- Call record() at least once, at most ~34 times (extra steps are dropped).
+- TRACE THE WHOLE RUN. Call record() on EVERY meaningful iteration of your loop — from the
+  first to the last — so the deck shows the algorithm running to completion, not just its
+  opening moves. Placing record() inside the main loop (not gated behind an early break) is
+  what produces a full start-to-end walkthrough. A deck that stops before the answer is found
+  is the #1 problem to avoid.
+- Budget: up to ~60 record() calls. If a complete trace of your input would need more, do NOT
+  let it truncate mid-run — SHRINK THE INPUT instead (a smaller array / smaller n) so the
+  ENTIRE algorithm still completes within the budget. A full run on a small example is the
+  goal; a partial run on a large one is a failure. (Extra steps beyond the cap are dropped.)
+- Call record() at least once.
 - Do not print — only record() produces output.
 If the tool returns an error, fix your code or inputs and call it again.`
 
@@ -316,7 +332,7 @@ server.registerTool(
     inputSchema: codeInputSchema,
   },
   async ({ title, subtitle, problem_id, intro, outro, input, code, code_display }) => {
-    const result = await runInstrumentedCode(code, input || {}, { timeoutMs: 2000, maxSteps: 40 })
+    const result = await runInstrumentedCode(code, input || {}, { timeoutMs: 2000, maxSteps: schema.maxSteps })
 
     if (!result.ok) {
       return textError(
