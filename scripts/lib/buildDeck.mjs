@@ -44,6 +44,7 @@ const DEFAULT_DESC = {
   code: 'The algorithm being traced. The highlighted line is what runs at this step.',
   tree: 'The binary tree being traversed. Hover a node to see its value and role at this step.',
   graph: 'The graph being explored. Hover a node to see its role at this step.',
+  grid: 'The matrix being processed. Hover a cell to see its value and role at this step.',
 }
 
 const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b)
@@ -100,6 +101,28 @@ function defaultGraphNotes(nodes, highlighted, pointers) {
   return out
 }
 
+// Per-cell hover text for a grid run — a 2D array parallel to `values` (a grid
+// has row/col ordering, unlike graph's id-keyed notes). null for blocked cells,
+// which Grid never labels. Same shape contract as the other defaultNotes.
+function defaultGridNotes(values, highlighted, pointers) {
+  const hi = new Set((Array.isArray(highlighted) ? highlighted : []).map((h) => `${h.row},${h.col}`))
+  const labelAt = new Map()
+  for (const p of pointers || []) {
+    const k = `${p.row},${p.col}`
+    labelAt.set(k, labelAt.has(k) ? `${labelAt.get(k)}, ${p.label}` : p.label)
+  }
+  return values.map((row, r) =>
+    row.map((v, c) => {
+      if (v === null || v === undefined) return null
+      let s = `Cell (${r},${c}) = ${v}.`
+      const k = `${r},${c}`
+      if (labelAt.has(k)) s += ` Pointer ${labelAt.get(k)} is here.`
+      else if (hi.has(k)) s += ' Highlighted this step.'
+      return clampDesc(s)
+    }),
+  )
+}
+
 // A run visualizes exactly ONE structure. Detection priority (array > tree >
 // graph) matches record() field precedence; null means no structure → the flat
 // fallback. seedValues is already resolved for the array case by the caller.
@@ -109,6 +132,8 @@ function detectStructure(usableSteps, seedValues) {
   if (t) return 'tree'
   const g = usableSteps.find((s) => s.graph && Array.isArray(s.graph.nodes) && s.graph.nodes.length > 0)
   if (g) return 'graph'
+  const gr = usableSteps.find((s) => Array.isArray(s.grid) && s.grid.length > 0)
+  if (gr) return 'grid'
   return null
 }
 
@@ -179,6 +204,49 @@ function makeViz(kind, { seedValues, usableSteps, provided, assignColor }) {
           step.graphNotes && typeof step.graphNotes === 'object' && !Array.isArray(step.graphNotes)
             ? step.graphNotes
             : defaultGraphNotes(currentGraph.nodes, p.highlighted, p.pointers)
+        return p
+      },
+    }
+  }
+
+  if (kind === 'grid') {
+    const seedGrid = (usableSteps.find((s) => Array.isArray(s.grid))?.grid || []).map((row) => row.slice())
+    // Axis labels are static for the whole run — seed once, never patched.
+    const rowLabels = usableSteps.find((s) => Array.isArray(s.gridRowLabels))?.gridRowLabels
+    const colLabels = usableSteps.find((s) => Array.isArray(s.gridColLabels))?.gridColLabels
+    let currentGrid = seedGrid.map((row) => row.slice())
+    return {
+      id: 'grid',
+      component: {
+        id: 'grid',
+        type: 'grid',
+        description: clampDesc(provided.grid || DEFAULT_DESC.grid),
+        props: {
+          values: seedGrid,
+          ...(Array.isArray(rowLabels) ? { rowLabels } : {}),
+          ...(Array.isArray(colLabels) ? { colLabels } : {}),
+        },
+      },
+      patchFor(step) {
+        const p = {
+          highlighted: Array.isArray(step.gridHighlighted) ? step.gridHighlighted : [],
+          pointers: Array.isArray(step.gridPointers)
+            ? step.gridPointers.map((pt) => ({
+                label: pt.label,
+                row: pt.row,
+                col: pt.col,
+                color: assignColor(pt.label, pt.color),
+              }))
+            : [],
+        }
+        if (Array.isArray(step.grid) && !sameJson(step.grid, currentGrid)) {
+          p.values = step.grid
+          currentGrid = step.grid.map((row) => row.slice())
+        }
+        if (Array.isArray(step.gridColors)) p.colors = step.gridColors
+        p.notes = Array.isArray(step.gridNotes)
+          ? step.gridNotes
+          : defaultGridNotes(currentGrid, p.highlighted, p.pointers)
         return p
       },
     }

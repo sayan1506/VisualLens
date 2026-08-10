@@ -367,6 +367,104 @@ export function validateDeck(deck) {
             err(`${cat}: graph notes must be an object of { nodeId: string }`)
           break
         }
+        case 'grid': {
+          if (!Array.isArray(p.values) || p.values.length === 0)
+            return err(`${cat}: grid requires a non-empty props.values (row-major 2D array)`)
+          if (!p.values.every((row) => Array.isArray(row)))
+            return err(`${cat}: grid values must be a 2D array (every row an array)`)
+          const rows = p.values.length
+          if (rows > LIMITS.maxGridRows)
+            err(`${cat}: values has too many rows (${rows} > ${LIMITS.maxGridRows})`)
+          const cols = p.values[0].length
+          if (cols === 0) return err(`${cat}: grid rows must be non-empty`)
+          if (cols > LIMITS.maxGridCols)
+            err(`${cat}: values has too many columns (${cols} > ${LIMITS.maxGridCols})`)
+          if (!p.values.every((row) => row.length === cols))
+            err(`${cat}: grid values must be rectangular (every row the same length)`)
+          p.values.forEach((row, ri) =>
+            row.forEach((v, ci) => {
+              if (v !== null && !['number', 'string'].includes(typeof v))
+                err(`${cat}: values[${ri}][${ci}] must be a number, string, or null`)
+            }),
+          )
+          // A grid position is a {row, col} pair. Bounds are checked; a cell that
+          // is null (blocked / not-yet-filled) is a valid target — pointing at a
+          // DP cell about to be filled is legitimate — so null-ness is not an error.
+          const inBounds = (r, c) =>
+            Number.isInteger(r) && Number.isInteger(c) && r >= 0 && r < rows && c >= 0 && c < cols
+          if (p.highlighted !== undefined) {
+            if (!Array.isArray(p.highlighted)) err(`${cat}: highlighted must be an array of {row, col}`)
+            else
+              p.highlighted.forEach((h, hh) => {
+                if (!h || typeof h !== 'object') err(`${cat}: highlighted[${hh}] must be a {row, col} object`)
+                else if (!inBounds(h.row, h.col))
+                  err(
+                    `${cat}: highlighted[${hh}] cell (${h.row},${h.col}) out of bounds (rows 0..${rows - 1}, cols 0..${cols - 1})`,
+                  )
+              })
+          }
+          if (p.pointers !== undefined) {
+            if (!Array.isArray(p.pointers)) err(`${cat}: pointers must be an array`)
+            else {
+              if (p.pointers.length > LIMITS.maxPointers)
+                err(`${cat}: too many pointers (max ${LIMITS.maxPointers})`)
+              p.pointers.forEach((ptr) => {
+                if (!ptr.label) err(`${cat}: a pointer is missing label`)
+                if (!inBounds(ptr.row, ptr.col))
+                  err(
+                    `${cat}: pointer "${ptr.label}" cell (${ptr.row},${ptr.col}) out of bounds (rows 0..${rows - 1}, cols 0..${cols - 1})`,
+                  )
+                if (!COLORS.includes(ptr.color))
+                  err(`${cat}: pointer "${ptr.label}" color must be one of ${COLORS.join(', ')}`)
+              })
+            }
+          }
+          if (p.colors !== undefined) {
+            if (!Array.isArray(p.colors)) err(`${cat}: colors must be a 2D array parallel to values`)
+            else {
+              if (p.colors.length > rows)
+                err(`${cat}: colors has more rows (${p.colors.length}) than values (${rows})`)
+              p.colors.forEach((row, ri) => {
+                if (!Array.isArray(row)) return err(`${cat}: colors[${ri}] must be an array`)
+                if (row.length > cols)
+                  err(`${cat}: colors[${ri}] has more entries (${row.length}) than columns (${cols})`)
+                row.forEach((col, ci) => {
+                  if (col !== null && !COLORS.includes(col))
+                    err(`${cat}: colors[${ri}][${ci}] must be null or one of ${COLORS.join(', ')}`)
+                })
+              })
+            }
+          }
+          if (p.notes !== undefined) {
+            if (!Array.isArray(p.notes)) err(`${cat}: notes must be a 2D array parallel to values`)
+            else {
+              if (p.notes.length > rows)
+                err(`${cat}: notes has more rows (${p.notes.length}) than values (${rows})`)
+              p.notes.forEach((row, ri) => {
+                if (!Array.isArray(row)) return err(`${cat}: notes[${ri}] must be an array`)
+                if (row.length > cols)
+                  err(`${cat}: notes[${ri}] has more entries (${row.length}) than columns (${cols})`)
+                row.forEach((note, ci) => {
+                  if (note !== null && typeof note !== 'string')
+                    err(`${cat}: notes[${ri}][${ci}] must be a string or null`)
+                  else if (typeof note === 'string' && note.length > LIMITS.maxDescriptionChars)
+                    err(`${cat}: notes[${ri}][${ci}] exceeds ${LIMITS.maxDescriptionChars} chars`)
+                })
+              })
+            }
+          }
+          if (p.rowLabels !== undefined) {
+            if (!Array.isArray(p.rowLabels)) err(`${cat}: rowLabels must be an array of strings`)
+            else if (p.rowLabels.length > rows)
+              err(`${cat}: rowLabels has more entries (${p.rowLabels.length}) than rows (${rows})`)
+          }
+          if (p.colLabels !== undefined) {
+            if (!Array.isArray(p.colLabels)) err(`${cat}: colLabels must be an array of strings`)
+            else if (p.colLabels.length > cols)
+              err(`${cat}: colLabels has more entries (${p.colLabels.length}) than columns (${cols})`)
+          }
+          break
+        }
       }
     })
   })

@@ -8,6 +8,7 @@ import StatePanel from '../components/StatePanel'
 import Tree from '../components/Tree'
 import Graph from '../components/Graph'
 import BarChart from '../components/BarChart'
+import Grid from '../components/Grid'
 
 // Single per-type dispatch, shared by SlideRenderer (order-based framing
 // templates) and ScoreboardLayout (role-partitioned zoned templates).
@@ -38,5 +39,7 @@ export function renderComponent(c: ComponentInstance, key: string | number) {
       return <Graph key={key} description={description} {...c.props} />
     case 'bar_chart':
       return <BarChart key={key} description={description} {...c.props} />
+    case 'grid':
+      return <Grid key={key} description={description} {...c.props} />
   }
 }

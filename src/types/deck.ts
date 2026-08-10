@@ -116,6 +116,34 @@ export interface GraphProps {
   notes?: Record<string, string> // node id → hover text
 }
 
+// A 2D matrix / grid, given row-major: values[r][c]. Every row must be the same
+// length (a rectangular matrix). `null` marks a blocked / empty cell (walls in a
+// maze, unfilled DP entries) — it is drawn dimmed and can't be highlighted.
+// Unlike array/tree (index) and graph (id), a grid position is a {row, col}
+// PAIR, so highlighted, pointers, colors, and notes are all cell-addressed.
+// `rowLabels`/`colLabels` annotate the axes (DP-table headers). Positions are
+// computed by the component — authors only supply the matrix.
+export interface GridCell {
+  row: number
+  col: number
+}
+
+export interface GridPointer extends GridCell {
+  label: string
+  color: ColorName
+}
+
+export interface GridProps {
+  values: (number | string | null)[][] // row-major; every row the same length
+  highlighted?: GridCell[]
+  pointers?: GridPointer[]
+  label?: string
+  colors?: (ColorName | null)[][] // per-cell fill tint, parallel to values
+  notes?: (string | null)[][] // per-cell hover text, parallel to values
+  rowLabels?: string[] // optional axis labels, parallel to rows
+  colLabels?: string[] // optional axis labels, parallel to columns
+}
+
 // ---- component instance discriminated union ----
 // `type` selects the component; `props` is that component's prop shape.
 // Every instance may also carry (additive, backward-compatible):
@@ -136,6 +164,7 @@ export type ComponentInstance = WithMeta<
   | { type: 'tree'; props: TreeProps }
   | { type: 'graph'; props: GraphProps }
   | { type: 'bar_chart'; props: BarChartProps }
+  | { type: 'grid'; props: GridProps }
 >
 
 export type ComponentType = ComponentInstance['type']

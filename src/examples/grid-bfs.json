@@ -1,0 +1,152 @@
+{
+  "meta": {
+    "problem_id": "grid-bfs",
+    "title": "Shortest Path in a Grid",
+    "canvas": { "width": 1280, "height": 720 },
+    "difficulty": "medium",
+    "complexity": { "time": "O(rows·cols)", "space": "O(rows·cols)" }
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Shortest Path in a Grid",
+            "subtitle": "BFS on a matrix: explore cell by cell, walls block the way"
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s2",
+      "template": "concept",
+      "components": [
+        {
+          "type": "text",
+          "props": {
+            "text": "Treat each open cell as a graph node connected to its 4 neighbors. BFS from the start visits cells in ring order, so the first time it reaches the goal is along a shortest path. Walls (blocked cells) are simply never enqueued.",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "callout",
+          "props": {
+            "variant": "info",
+            "text": "Mark a cell visited when you ENQUEUE it, not when you dequeue, so it can't be added twice."
+          }
+        }
+      ],
+      "narration": ""
+    }
+  ],
+  "scenes": [
+    {
+      "id": "walk",
+      "template": "array_state",
+      "components": [
+        {
+          "id": "grid",
+          "type": "grid",
+          "description": "The grid. S is the start, E the goal, dimmed cells are walls. Highlighted cells have been visited; cur marks the cell being processed.",
+          "props": {
+            "label": "grid",
+            "values": [
+              ["S", ".", "."],
+              [null, null, "."],
+              [".", ".", "E"]
+            ]
+          }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "description": "The FIFO queue of cells to process and the set of cells discovered so far.",
+          "props": { "title": "State", "vars": { "queue": "(0,0)", "visited": "(0,0)" } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "k1",
+          "caption": "Start at S (0,0): mark it visited and enqueue it.",
+          "patch": {
+            "grid": {
+              "highlighted": [{ "row": 0, "col": 0 }],
+              "pointers": [{ "label": "cur", "row": 0, "col": 0, "color": "green" }]
+            },
+            "st": { "vars": { "queue": "(0,0)", "visited": "(0,0)" } }
+          }
+        },
+        {
+          "id": "k2",
+          "caption": "Dequeue (0,0). Right neighbor (0,1) is open — visit and enqueue it. Down is a wall.",
+          "patch": {
+            "grid": {
+              "highlighted": [{ "row": 0, "col": 0 }, { "row": 0, "col": 1 }],
+              "pointers": [{ "label": "cur", "row": 0, "col": 0, "color": "green" }]
+            },
+            "st": { "vars": { "queue": "(0,1)", "visited": "(0,0),(0,1)" } }
+          }
+        },
+        {
+          "id": "k3",
+          "caption": "Dequeue (0,1). Its open neighbor (0,2) is new — enqueue it.",
+          "patch": {
+            "grid": {
+              "highlighted": [{ "row": 0, "col": 0 }, { "row": 0, "col": 1 }, { "row": 0, "col": 2 }],
+              "pointers": [{ "label": "cur", "row": 0, "col": 1, "color": "green" }]
+            },
+            "st": { "vars": { "queue": "(0,2)", "visited": "(0,0),(0,1),(0,2)" } }
+          }
+        },
+        {
+          "id": "k4",
+          "caption": "Dequeue (0,2). Going down, (1,2) is open — enqueue it.",
+          "patch": {
+            "grid": {
+              "highlighted": [
+                { "row": 0, "col": 0 }, { "row": 0, "col": 1 }, { "row": 0, "col": 2 }, { "row": 1, "col": 2 }
+              ],
+              "pointers": [{ "label": "cur", "row": 0, "col": 2, "color": "green" }]
+            },
+            "st": { "vars": { "queue": "(1,2)", "visited": "(0,0),(0,1),(0,2),(1,2)" } }
+          }
+        },
+        {
+          "id": "k5",
+          "caption": "Dequeue (1,2). Down is (2,2) — that's E. Enqueue it.",
+          "patch": {
+            "grid": {
+              "highlighted": [
+                { "row": 0, "col": 0 }, { "row": 0, "col": 1 }, { "row": 0, "col": 2 },
+                { "row": 1, "col": 2 }, { "row": 2, "col": 2 }
+              ],
+              "pointers": [{ "label": "cur", "row": 1, "col": 2, "color": "green" }]
+            },
+            "st": { "vars": { "queue": "(2,2)", "visited": "(0,0),(0,1),(0,2),(1,2),(2,2)" } }
+          }
+        },
+        {
+          "id": "k6",
+          "variant": "success",
+          "caption": "Dequeue (2,2) = E. Goal reached in 4 moves — the highlighted path is a shortest one.",
+          "patch": {
+            "grid": {
+              "highlighted": [],
+              "pointers": [{ "label": "cur", "row": 2, "col": 2, "color": "green" }],
+              "colors": [
+                ["green", "green", "green"],
+                [null, null, "green"],
+                [null, null, "green"]
+              ]
+            },
+            "st": { "vars": { "queue": "(empty)", "visited": "all 5 path cells" } }
+          }
+        }
+      ]
+    }
+  ]
+}

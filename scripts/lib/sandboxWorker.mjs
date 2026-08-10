@@ -54,7 +54,7 @@ function sanitizeStep(step) {
     out.colors = step.colors.map((c) => (COLORS.includes(c) ? c : null))
   if (step.descriptions && typeof step.descriptions === 'object') {
     const d = {}
-    for (const k of ['array', 'state', 'code', 'tree', 'graph']) {
+    for (const k of ['array', 'state', 'code', 'tree', 'graph', 'grid']) {
       if (typeof step.descriptions[k] === 'string') d[k] = step.descriptions[k]
     }
     if (Object.keys(d).length) out.descriptions = d
@@ -108,6 +108,45 @@ function sanitizeStep(step) {
     for (const [k, v] of Object.entries(step.graphNotes)) if (typeof v === 'string') gn[k] = v
     out.graphNotes = gn
   }
+
+  // ---- grid: a row-major 2D matrix. Cells are {row,col}-addressed (distinct
+  // from the index-based array/tree and id-based graph fields), so highlight,
+  // pointers, colors, and notes all get their own grid* fields. null = a blocked
+  // / not-yet-filled cell. ----
+  if (Array.isArray(step.grid) && step.grid.every((row) => Array.isArray(row))) {
+    out.grid = step.grid.map((row) =>
+      row.map((v) => (v === null || ['number', 'string'].includes(typeof v) ? v : String(v))),
+    )
+  }
+  if (Array.isArray(step.gridHighlighted)) {
+    out.gridHighlighted = step.gridHighlighted
+      .filter((h) => h && Number.isInteger(h.row) && Number.isInteger(h.col))
+      .map((h) => ({ row: h.row, col: h.col }))
+  }
+  if (Array.isArray(step.gridPointers)) {
+    out.gridPointers = step.gridPointers
+      .filter((p) => p && p.label != null && Number.isInteger(p.row) && Number.isInteger(p.col))
+      .map((p) => ({
+        label: String(p.label),
+        row: p.row,
+        col: p.col,
+        color: COLORS.includes(p.color) ? p.color : undefined,
+      }))
+  }
+  if (Array.isArray(step.gridColors)) {
+    out.gridColors = step.gridColors.map((row) =>
+      Array.isArray(row) ? row.map((c) => (COLORS.includes(c) ? c : null)) : [],
+    )
+  }
+  if (Array.isArray(step.gridNotes)) {
+    out.gridNotes = step.gridNotes.map((row) =>
+      Array.isArray(row) ? row.map((nn) => (nn == null ? null : String(nn))) : [],
+    )
+  }
+  // Axis labels are static for the whole run (DP-table headers), seeded once by
+  // buildDeck rather than patched per step.
+  if (Array.isArray(step.gridRowLabels)) out.gridRowLabels = step.gridRowLabels.map((l) => String(l))
+  if (Array.isArray(step.gridColLabels)) out.gridColLabels = step.gridColLabels.map((l) => String(l))
   return out
 }
 

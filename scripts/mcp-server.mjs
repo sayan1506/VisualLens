@@ -145,7 +145,9 @@ COMPONENTS (type → props):
     // A binary tree as a LeetCode-style LEVEL-ORDER array: index 0 is the root, node i's children are 2i+1 and 2i+2, null = missing node. Layout is automatic — never supply coordinates. highlighted/pointers use these level-order indices; never reference a null slot.
 - graph        { nodes: [{id, x, y, value?}] (<=12), edges?: [{from, to, directed?, weight?}] (<=24), highlighted?: string[], pointers?: [{label, node, color}] (<=4), label?, notes?: {id: text} }
     // A general graph. x/y are NORMALIZED positions in 0..1 (0,0 = top-left) that YOU choose to lay it out. edges reference node ids. Unlike array/tree, highlighted + pointers reference node IDS (a graph has no index order).
-  colors: "orange" | "blue" | "green" | "red". array/tree indices are 0-based and must be in bounds; graph highlighted/pointers/edges must reference known node ids.
+- grid         { values: (number|string|null)[][] (<=10 rows x <=10 cols), highlighted?: [{row,col}], pointers?: [{label,row,col,color}] (<=4), label?, colors?: (color|null)[][], notes?: (string|null)[][], rowLabels?: string[], colLabels?: string[] }
+    // A 2D matrix, ROW-MAJOR: values[r][c]. Must be rectangular (every row same length). null = a blocked/empty cell (maze wall, unfilled DP entry), drawn dimmed. Unlike array/tree (index) and graph (id), a cell is a {row,col} PAIR — highlighted/pointers/colors/notes are all cell-addressed. Layout is automatic; never supply coordinates. Use for matrix traversal, grid BFS/DFS, and DP tables (rowLabels/colLabels annotate the axes).
+  colors: "orange" | "blue" | "green" | "red". array/tree indices are 0-based and must be in bounds; grid {row,col} cells must be in bounds; graph highlighted/pointers/edges must reference known node ids.
   Pick ONE structure per walkthrough: array_state stacks it with a state_panel; code_walk puts a code_panel beside it.
 
 OPTIONAL hover text (all interactive-only; never affects PNGs):
@@ -204,7 +206,7 @@ INPUTS you provide:
 - code_display? — string[] (<=14): the CLEAN source lines to SHOW beside the array (NOT your instrumented \`code\`; drop the record() calls, keep the algorithm). Provide this and the walkthrough gains a persistent code panel; then pass \`line\` in each record() to highlight the running line. Omit for no code panel.
 
 record(step) — call once per step you want to show. Shape (all fields optional but include what's relevant).
-Visualize ONE structure per run — an array, a tree, OR a graph:
+Visualize ONE structure per run — an array, a tree, a graph, OR a grid:
   {
     // --- ARRAY (the default structure) ---
     values:      number[]|string[]   // the array being visualized (<=12). Send once; carried forward if omitted next step.
@@ -222,14 +224,23 @@ Visualize ONE structure per run — an array, a tree, OR a graph:
     graphPointers:    [{ label, node, color? }]   // <=4; node is a node id
     graphNotes:       { id: text }                // OPTIONAL per-node hover text keyed by id
 
+    // --- GRID (2D matrix, ROW-MAJOR; cell-addressed, so its OWN grid* fields) ---
+    grid:            (number|string|null)[][]  // values[r][c]; rectangular; <=10 rows x <=10 cols; null = blocked/empty cell
+    gridHighlighted: [{ row, col }]             // cells to emphasize this step
+    gridPointers:    [{ label, row, col, color? }]  // <=4; a cell is a {row,col} pair
+    gridColors:      (color|null)[][]           // OPTIONAL per-cell fill tint, parallel to grid
+    gridNotes:       (string|null)[][]          // OPTIONAL per-cell hover text, parallel to grid. Omit — auto-generated.
+    gridRowLabels:   string[]                   // OPTIONAL axis labels (DP-table headers); static — send once
+    gridColLabels:   string[]                   // OPTIONAL axis labels; static — send once
+
     // --- shared across all structures ---
     state:       { name: value }     // scalar variables to show (numbers/strings/bools)
     explanation: string              // one sentence describing this step (<=160)
     variant:     "info"|"warn"|"success"  // callout style; default info, use success for the final step
     line:        number              // 0-based index into code_display to highlight this step (only if you passed code_display)
-    descriptions:{ array?, tree?, graph?, state?, code? }  // OPTIONAL hover text for the panels (<=200 each). Omit — defaults added.
+    descriptions:{ array?, tree?, graph?, grid?, state?, code? }  // OPTIONAL hover text for the panels (<=200 each). Omit — defaults added.
   }
-  Array/tree indices are 0-based and in bounds; graph fields reference known node ids; line is within code_display.length.
+  Array/tree indices are 0-based and in bounds; grid {row,col} cells are in bounds; graph fields reference known node ids; line is within code_display.length.
 
 INTERACTIVITY (automatic): array runs are rendered as a persistent "scoreboard" —
 the same boxes/panels stay on screen and only their values change between steps,
