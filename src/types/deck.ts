@@ -144,6 +144,23 @@ export interface GridProps {
   colLabels?: string[] // optional axis labels, parallel to columns
 }
 
+// A singly linked list. Node values are index-addressed like an array: nodes[i]
+// is the value in node i. `next` is a PARALLEL array of successor indices —
+// next[i] is the index node i points to, or null for the end of the list. Omit
+// `next` entirely for the default forward chain (0→1→2→…→null). A non-forward
+// next entry (a backward or skipping index) renders as an arc above the row,
+// which is exactly what makes reversal (arrows flip) and cycle detection (a
+// back-edge loop) legible. highlighted/pointers/notes reuse the SAME index
+// semantics as ArrayBlock, so slow/fast/prev/cur are ordinary pointers.
+export interface LinkedListProps {
+  nodes: (number | string)[]
+  next?: (number | null)[] // parallel to nodes; successor index or null. Omit → forward chain.
+  highlighted?: number[]
+  pointers?: Pointer[]
+  label?: string
+  notes?: (string | null)[] // per-node hover text, parallel to nodes
+}
+
 // ---- component instance discriminated union ----
 // `type` selects the component; `props` is that component's prop shape.
 // Every instance may also carry (additive, backward-compatible):
@@ -165,6 +182,7 @@ export type ComponentInstance = WithMeta<
   | { type: 'graph'; props: GraphProps }
   | { type: 'bar_chart'; props: BarChartProps }
   | { type: 'grid'; props: GridProps }
+  | { type: 'linked_list'; props: LinkedListProps }
 >
 
 export type ComponentType = ComponentInstance['type']

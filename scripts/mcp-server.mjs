@@ -147,7 +147,9 @@ COMPONENTS (type → props):
     // A general graph. x/y are NORMALIZED positions in 0..1 (0,0 = top-left) that YOU choose to lay it out. edges reference node ids. Unlike array/tree, highlighted + pointers reference node IDS (a graph has no index order).
 - grid         { values: (number|string|null)[][] (<=10 rows x <=10 cols), highlighted?: [{row,col}], pointers?: [{label,row,col,color}] (<=4), label?, colors?: (color|null)[][], notes?: (string|null)[][], rowLabels?: string[], colLabels?: string[] }
     // A 2D matrix, ROW-MAJOR: values[r][c]. Must be rectangular (every row same length). null = a blocked/empty cell (maze wall, unfilled DP entry), drawn dimmed. Unlike array/tree (index) and graph (id), a cell is a {row,col} PAIR — highlighted/pointers/colors/notes are all cell-addressed. Layout is automatic; never supply coordinates. Use for matrix traversal, grid BFS/DFS, and DP tables (rowLabels/colLabels annotate the axes).
-  colors: "orange" | "blue" | "green" | "red". array/tree indices are 0-based and must be in bounds; grid {row,col} cells must be in bounds; graph highlighted/pointers/edges must reference known node ids.
+- linked_list  { nodes: (number|string)[] (<=10), next?: (number|null)[], highlighted?: number[], pointers?: [{label,index,color}] (<=4), label?, notes?: (string|null)[] }
+    // A singly linked list. Node values are index-addressed like an array; highlighted/pointers/notes use those 0-based indices (slow/fast/prev/cur are ordinary pointers). next is a PARALLEL array of successor indices: next[i] = the index node i points to, or null for the end. OMIT next for the default forward chain (0→1→…→null). A non-forward next entry (backward or skipping) draws as an arc above the row — that's what makes reversal (arrows flip) and cycle detection (a back-edge loop) legible.
+  colors: "orange" | "blue" | "green" | "red". array/tree/list indices are 0-based and must be in bounds; grid {row,col} cells must be in bounds; graph highlighted/pointers/edges must reference known node ids.
   Pick ONE structure per walkthrough: array_state stacks it with a state_panel; code_walk puts a code_panel beside it.
 
 OPTIONAL hover text (all interactive-only; never affects PNGs):
@@ -206,7 +208,7 @@ INPUTS you provide:
 - code_display? — string[] (<=14): the CLEAN source lines to SHOW beside the array (NOT your instrumented \`code\`; drop the record() calls, keep the algorithm). Provide this and the walkthrough gains a persistent code panel; then pass \`line\` in each record() to highlight the running line. Omit for no code panel.
 
 record(step) — call once per step you want to show. Shape (all fields optional but include what's relevant).
-Visualize ONE structure per run — an array, a tree, a graph, OR a grid:
+Visualize ONE structure per run — an array, a tree, a graph, a grid, OR a linked list:
   {
     // --- ARRAY (the default structure) ---
     values:      number[]|string[]   // the array being visualized (<=12). Send once; carried forward if omitted next step.
@@ -233,14 +235,19 @@ Visualize ONE structure per run — an array, a tree, a graph, OR a grid:
     gridRowLabels:   string[]                   // OPTIONAL axis labels (DP-table headers); static — send once
     gridColLabels:   string[]                   // OPTIONAL axis labels; static — send once
 
+    // --- LINKED LIST (index-addressed like an array; REUSES highlighted/pointers/notes above) ---
+    list:            (number|string)[]   // node values (<=10), index-addressed. Send once; carried forward if omitted.
+    listNext:        (number|null)[]     // OPTIONAL parallel successor indices: listNext[i] = index node i points to, null = end.
+                                          // Omit for the default forward chain. Change it to show rewiring (reversal) or a cycle (back-edge).
+
     // --- shared across all structures ---
     state:       { name: value }     // scalar variables to show (numbers/strings/bools)
     explanation: string              // one sentence describing this step (<=160)
     variant:     "info"|"warn"|"success"  // callout style; default info, use success for the final step
     line:        number              // 0-based index into code_display to highlight this step (only if you passed code_display)
-    descriptions:{ array?, tree?, graph?, grid?, state?, code? }  // OPTIONAL hover text for the panels (<=200 each). Omit — defaults added.
+    descriptions:{ array?, tree?, graph?, grid?, list?, state?, code? }  // OPTIONAL hover text for the panels (<=200 each). Omit — defaults added.
   }
-  Array/tree indices are 0-based and in bounds; grid {row,col} cells are in bounds; graph fields reference known node ids; line is within code_display.length.
+  Array/tree/list indices are 0-based and in bounds; listNext entries are null or in-bounds; grid {row,col} cells are in bounds; graph fields reference known node ids; line is within code_display.length.
 
 INTERACTIVITY (automatic): array runs are rendered as a persistent "scoreboard" —
 the same boxes/panels stay on screen and only their values change between steps,

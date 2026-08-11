@@ -465,6 +465,68 @@ export function validateDeck(deck) {
           }
           break
         }
+        case 'linked_list': {
+          if (!Array.isArray(p.nodes) || p.nodes.length === 0)
+            return err(`${cat}: linked_list requires a non-empty props.nodes array`)
+          if (p.nodes.length > LIMITS.maxListNodes)
+            err(`${cat}: nodes exceeds ${LIMITS.maxListNodes} elements`)
+          const n = p.nodes.length
+          p.nodes.forEach((v, ni) => {
+            if (!['number', 'string'].includes(typeof v))
+              err(`${cat}: nodes[${ni}] must be a number or string`)
+          })
+          // next is a PARALLEL array of successor indices: next[i] is null (end)
+          // or an in-bounds index other than i (no self-loop). Omit → forward chain.
+          if (p.next !== undefined) {
+            if (!Array.isArray(p.next)) err(`${cat}: next must be an array parallel to nodes`)
+            else {
+              if (p.next.length > n)
+                err(`${cat}: next has more entries (${p.next.length}) than nodes (${n})`)
+              p.next.forEach((nx, ni) => {
+                if (nx === null || nx === undefined) return
+                if (typeof nx !== 'number' || !Number.isInteger(nx) || nx < 0 || nx >= n)
+                  err(`${cat}: next[${ni}] must be null or an integer index in 0..${n - 1}`)
+                else if (nx === ni) err(`${cat}: next[${ni}] must not point at itself`)
+              })
+            }
+          }
+          if (p.highlighted !== undefined) {
+            if (!Array.isArray(p.highlighted)) err(`${cat}: highlighted must be an array`)
+            else
+              p.highlighted.forEach((h) => {
+                if (typeof h !== 'number' || h < 0 || h >= n)
+                  err(`${cat}: highlighted index ${h} out of bounds (0..${n - 1})`)
+              })
+          }
+          if (p.pointers !== undefined) {
+            if (!Array.isArray(p.pointers)) err(`${cat}: pointers must be an array`)
+            else {
+              if (p.pointers.length > LIMITS.maxPointers)
+                err(`${cat}: too many pointers (max ${LIMITS.maxPointers})`)
+              p.pointers.forEach((ptr) => {
+                if (!ptr.label) err(`${cat}: a pointer is missing label`)
+                if (typeof ptr.index !== 'number' || ptr.index < 0 || ptr.index >= n)
+                  err(`${cat}: pointer "${ptr.label}" index ${ptr.index} out of bounds (0..${n - 1})`)
+                if (!COLORS.includes(ptr.color))
+                  err(`${cat}: pointer "${ptr.label}" color must be one of ${COLORS.join(', ')}`)
+              })
+            }
+          }
+          if (p.notes !== undefined) {
+            if (!Array.isArray(p.notes)) err(`${cat}: notes must be an array parallel to nodes`)
+            else {
+              if (p.notes.length > n)
+                err(`${cat}: notes has more entries (${p.notes.length}) than nodes (${n})`)
+              p.notes.forEach((note, ni) => {
+                if (note !== null && typeof note !== 'string')
+                  err(`${cat}: notes[${ni}] must be a string or null`)
+                else if (typeof note === 'string' && note.length > LIMITS.maxDescriptionChars)
+                  err(`${cat}: notes[${ni}] exceeds ${LIMITS.maxDescriptionChars} chars`)
+              })
+            }
+          }
+          break
+        }
       }
     })
   })

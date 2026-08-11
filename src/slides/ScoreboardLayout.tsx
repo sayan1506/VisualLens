@@ -54,7 +54,7 @@ export default function ScoreboardLayout({
         strip.push(c)
         break
       default:
-        viz.push(c) // array_block, tree, graph, bar_chart, grid
+        viz.push(c) // array_block, tree, graph, bar_chart, grid, linked_list
     }
   }
 

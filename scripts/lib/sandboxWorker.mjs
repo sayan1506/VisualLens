@@ -54,7 +54,7 @@ function sanitizeStep(step) {
     out.colors = step.colors.map((c) => (COLORS.includes(c) ? c : null))
   if (step.descriptions && typeof step.descriptions === 'object') {
     const d = {}
-    for (const k of ['array', 'state', 'code', 'tree', 'graph', 'grid']) {
+    for (const k of ['array', 'state', 'code', 'tree', 'graph', 'grid', 'list']) {
       if (typeof step.descriptions[k] === 'string') d[k] = step.descriptions[k]
     }
     if (Object.keys(d).length) out.descriptions = d
@@ -147,6 +147,17 @@ function sanitizeStep(step) {
   // buildDeck rather than patched per step.
   if (Array.isArray(step.gridRowLabels)) out.gridRowLabels = step.gridRowLabels.map((l) => String(l))
   if (Array.isArray(step.gridColLabels)) out.gridColLabels = step.gridColLabels.map((l) => String(l))
+
+  // ---- linked list: node values are index-addressed like an array, so it
+  // REUSES the highlighted/pointers/notes fields above (same integer indices).
+  // Only `list` (node values) and `listNext` (parallel successor-index array;
+  // null = end) are list-specific. Omit listNext for the default forward chain. ----
+  if (Array.isArray(step.list)) {
+    out.list = step.list.map((v) => (['number', 'string'].includes(typeof v) ? v : String(v)))
+  }
+  if (Array.isArray(step.listNext)) {
+    out.listNext = step.listNext.map((nx) => (Number.isInteger(nx) ? nx : null))
+  }
   return out
 }
 

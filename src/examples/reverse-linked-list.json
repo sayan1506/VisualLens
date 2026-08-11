@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "problem_id": "206",
+    "title": "Reverse a Linked List",
+    "canvas": { "width": 1280, "height": 720 },
+    "difficulty": "easy",
+    "complexity": { "time": "O(n)", "space": "O(1)" }
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Reverse a Linked List",
+            "subtitle": "Flip each node's next pointer, walking prev and cur down the list"
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s2",
+      "template": "concept",
+      "components": [
+        {
+          "type": "text",
+          "props": {
+            "text": "Keep two pointers, prev and cur. At each node, remember the node ahead, then point cur's arrow back at prev. Advance both forward. When cur runs off the end, prev is the new head.",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "callout",
+          "props": {
+            "variant": "info",
+            "text": "One pass, O(n) time and O(1) space — you only ever hold three references at once."
+          }
+        }
+      ],
+      "narration": ""
+    }
+  ],
+  "scenes": [
+    {
+      "id": "walk",
+      "template": "array_state",
+      "components": [
+        {
+          "id": "list",
+          "type": "linked_list",
+          "description": "The linked list. cur is the node being reversed; prev is the head of the already-reversed part. A backward arc is a flipped next pointer.",
+          "props": {
+            "label": "list",
+            "nodes": [1, 2, 3],
+            "next": [1, 2, null]
+          }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "description": "The two pointers the algorithm carries. prev starts null; cur starts at the head.",
+          "props": { "title": "State", "vars": { "prev": "null", "cur": "1" } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "k1",
+          "caption": "cur starts at the head (1); prev = null. Goal: flip every next arrow to point backward.",
+          "patch": {
+            "list": {
+              "highlighted": [0],
+              "pointers": [{ "label": "cur", "index": 0, "color": "green" }]
+            },
+            "st": { "vars": { "prev": "null", "cur": "1" } }
+          }
+        },
+        {
+          "id": "k2",
+          "caption": "Set 1's next to prev (null). Advance: prev = 1, cur = 2.",
+          "patch": {
+            "list": {
+              "next": [null, 2, null],
+              "highlighted": [0],
+              "pointers": [
+                { "label": "cur", "index": 1, "color": "green" },
+                { "label": "prev", "index": 0, "color": "orange" }
+              ]
+            },
+            "st": { "vars": { "prev": "1", "cur": "2" } }
+          }
+        },
+        {
+          "id": "k3",
+          "caption": "Set 2's next to point back at 1. Advance: prev = 2, cur = 3.",
+          "patch": {
+            "list": {
+              "next": [null, 0, null],
+              "highlighted": [1],
+              "pointers": [
+                { "label": "cur", "index": 2, "color": "green" },
+                { "label": "prev", "index": 1, "color": "orange" }
+              ]
+            },
+            "st": { "vars": { "prev": "2", "cur": "3" } }
+          }
+        },
+        {
+          "id": "k4",
+          "variant": "success",
+          "caption": "Set 3's next back at 2; cur falls off the end. Reversed list: 3 → 2 → 1.",
+          "patch": {
+            "list": {
+              "next": [null, 0, 1],
+              "highlighted": [2],
+              "pointers": [{ "label": "prev", "index": 2, "color": "orange" }]
+            },
+            "st": { "vars": { "prev": "3", "cur": "null" } }
+          }
+        }
+      ]
+    }
+  ]
+}

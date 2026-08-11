@@ -15,10 +15,11 @@
   "maxGraphEdges": 24,
   "maxGridRows": 10,
   "maxGridCols": 10,
+  "maxListNodes": 10,
   "defaultCanvas": { "width": 1280, "height": 720 },
   "templates": ["title", "concept", "array_state", "code_walk"],
   "colors": ["orange", "blue", "green", "red"],
-  "componentTypes": ["title_block", "text", "callout", "array_block", "code_panel", "state_panel", "tree", "graph", "bar_chart", "grid"],
+  "componentTypes": ["title_block", "text", "callout", "array_block", "code_panel", "state_panel", "tree", "graph", "bar_chart", "grid", "linked_list"],
   "calloutVariants": ["info", "warn", "success"],
   "difficulties": ["easy", "medium", "hard"]
 }

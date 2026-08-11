@@ -45,6 +45,7 @@ const DEFAULT_DESC = {
   tree: 'The binary tree being traversed. Hover a node to see its value and role at this step.',
   graph: 'The graph being explored. Hover a node to see its role at this step.',
   grid: 'The matrix being processed. Hover a cell to see its value and role at this step.',
+  list: 'The linked list being traversed. Hover a node to see its value and role at this step.',
 }
 
 const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b)
@@ -123,6 +124,22 @@ function defaultGridNotes(values, highlighted, pointers) {
   )
 }
 
+// Per-node hover text for a linked-list run. Parallel to `nodes` (index-addressed
+// like an array), same shape contract as defaultNotes so it passes the
+// notes.length <= nodes.length validation.
+function defaultListNotes(nodes, highlighted, pointers) {
+  const hi = new Set(Array.isArray(highlighted) ? highlighted : [])
+  const labelAt = new Map()
+  for (const p of pointers || [])
+    labelAt.set(p.index, labelAt.has(p.index) ? `${labelAt.get(p.index)}, ${p.label}` : p.label)
+  return nodes.map((v, i) => {
+    let s = `Node ${v} at position ${i}.`
+    if (labelAt.has(i)) s += ` Pointer ${labelAt.get(i)} is here.`
+    else if (hi.has(i)) s += ' Highlighted this step.'
+    return clampDesc(s)
+  })
+}
+
 // A run visualizes exactly ONE structure. Detection priority (array > tree >
 // graph) matches record() field precedence; null means no structure → the flat
 // fallback. seedValues is already resolved for the array case by the caller.
@@ -134,6 +151,8 @@ function detectStructure(usableSteps, seedValues) {
   if (g) return 'graph'
   const gr = usableSteps.find((s) => Array.isArray(s.grid) && s.grid.length > 0)
   if (gr) return 'grid'
+  const l = usableSteps.find((s) => Array.isArray(s.list) && s.list.length > 0)
+  if (l) return 'linked_list'
   return null
 }
 
@@ -247,6 +266,41 @@ function makeViz(kind, { seedValues, usableSteps, provided, assignColor }) {
         p.notes = Array.isArray(step.gridNotes)
           ? step.gridNotes
           : defaultGridNotes(currentGrid, p.highlighted, p.pointers)
+        return p
+      },
+    }
+  }
+
+  if (kind === 'linked_list') {
+    const seedNodes = (usableSteps.find((s) => Array.isArray(s.list))?.list || []).slice()
+    const seedNext = usableSteps.find((s) => Array.isArray(s.listNext))?.listNext
+    let currentNodes = seedNodes.slice()
+    let currentNext = Array.isArray(seedNext) ? seedNext.slice() : null
+    return {
+      id: 'list',
+      component: {
+        id: 'list',
+        type: 'linked_list',
+        description: clampDesc(provided.list || DEFAULT_DESC.list),
+        props: { nodes: seedNodes, ...(Array.isArray(seedNext) ? { next: seedNext } : {}) },
+      },
+      patchFor(step) {
+        const p = {
+          highlighted: Array.isArray(step.highlighted) ? step.highlighted : [],
+          pointers: Array.isArray(step.pointers)
+            ? step.pointers.map((pt) => ({ label: pt.label, index: pt.index, color: assignColor(pt.label, pt.color) }))
+            : [],
+        }
+        if (Array.isArray(step.list) && !sameValues(step.list, currentNodes)) {
+          p.nodes = step.list
+          currentNodes = step.list.slice()
+        }
+        // next changes as the list is rewired (reversal / cycle) — patch only on change.
+        if (Array.isArray(step.listNext) && !sameJson(step.listNext, currentNext)) {
+          p.next = step.listNext
+          currentNext = step.listNext.slice()
+        }
+        p.notes = Array.isArray(step.notes) ? step.notes : defaultListNotes(currentNodes, p.highlighted, p.pointers)
         return p
       },
     }
