@@ -1,6 +1,6 @@
 # VisualLens
 
-Turn any array, tree, or graph algorithm into a step-by-step visual explainer — as PNG slides or an interactive player — driven by your own AI assistant.
+Turn any array, tree, graph, matrix, or linked-list algorithm into a step-by-step visual explainer — as PNG slides or an interactive player — driven by your own AI assistant.
 
 VisualLens is an [MCP](https://modelcontextprotocol.io) server. You ask Claude (or any MCP-capable host) to "visualize binary search," Claude produces a structured slide deck, and VisualLens renders it into polished slides using a fixed catalog of hand-designed React components. No API keys, no paid services — the intelligence comes from the AI host you already use.
 
@@ -49,7 +49,7 @@ npm run deck two-sum-ii
 npm run play two-sum-ii
 ```
 
-Available examples: `two-sum-ii`, `binary-search`, `two-sum-scene`, `two-sum-approaches`, `container-with-most-water`, `sort-colors`, `tree-max-depth`, `graph-bfs`. `tree-max-depth` and `graph-bfs` exercise the tree and graph visualizers; `container-with-most-water` uses the bar-chart component; `sort-colors` uses per-cell value coloring (Dutch National Flag).
+Available examples: `two-sum-ii`, `binary-search`, `two-sum-scene`, `two-sum-approaches`, `container-with-most-water`, `sort-colors`, `tree-max-depth`, `graph-bfs`, `grid-bfs`, `reverse-linked-list`. `tree-max-depth` and `graph-bfs` exercise the tree and graph visualizers; `container-with-most-water` uses the bar-chart component; `sort-colors` uses per-cell value coloring (Dutch National Flag); `grid-bfs` walks a 2D matrix (shortest path with walls); `reverse-linked-list` flips a singly linked list's pointers.
 
 `two-sum-scene` demonstrates the **scene** model: instead of a fresh slide per step, the components are declared once and each step patches their props, so the player animates values in place across the walkthrough. `two-sum-approaches` shows **multiple approaches** in one deck (brute force → two pointers), which the player surfaces as approach tabs.
 
@@ -100,11 +100,13 @@ Best on **clearly multi-step** algorithms over a single structure:
 - Sorting — bubble / insertion / selection, Dutch National Flag (lots of steps = rich decks)
 - Trees — DFS/BFS traversals, max depth (binary tree as a level-order array)
 - Graphs — BFS/DFS, shortest-path walks over a hand-laid-out node set
+- Grids / matrices — grid BFS/DFS, flood fill, maze shortest path, 2D DP tables
+- Linked lists — traversal, reversal, fast/slow two-pointer (cycle detection, middle node)
 
 ## Current limitations
 
-- **Fixed catalog of shapes.** The component catalog covers arrays, bar charts, binary trees, graphs, pointers, code, state, callouts, and text. There is still **no linked-list, DP-grid, or stack** visualizer — those problems fall back to awkward array/text slides.
-- **One structure at a time.** Each run visualizes a single array, tree, *or* graph. Two-structure problems (e.g. Median of Two Sorted Arrays, merging two lists) can't be drawn properly yet.
+- **Fixed catalog of shapes.** The component catalog covers arrays, bar charts, binary trees, graphs, 2D grids/matrices, singly linked lists, pointers, code, state, callouts, and text. There is still **no stack/queue or hash-map** visualizer — those problems fall back to array/text/state slides.
+- **One structure at a time.** Each run visualizes a single array, tree, graph, grid, *or* linked list. Two-structure problems (e.g. Median of Two Sorted Arrays, merging two lists) can't be drawn properly yet.
 - **Trees are binary + level-order.** A tree is supplied as a LeetCode-style level-order array (index 0 = root, children of `i` at `2i+1`/`2i+2`). N-ary trees aren't supported.
 - **Graph layout is manual.** Node positions are normalized `x`/`y` coordinates the host LLM chooses — there is no automatic graph layout.
 - **Slide count follows the algorithm.** The deck is `title + intro + one slide per recorded step + outro`. Binary search on a small array is ~3 steps, so you get ~6 slides. Use a larger input or a step-heavier algorithm for more.
@@ -133,7 +135,7 @@ Best on **clearly multi-step** algorithms over a single structure:
 
 ```
 src/
-  components/       preloaded render catalog (ArrayBlock, BarChart, Tree, Graph, CodePanel, StatePanel, ...)
+  components/       preloaded render catalog (ArrayBlock, BarChart, Tree, Graph, Grid, LinkedList, CodePanel, StatePanel, ...)
   slides/           SlideRenderer + template layouts
   types/deck.ts     the deck JSON schema (AI ↔ renderer contract)
   schema/limits.json  single source of truth for limits + enum lists
