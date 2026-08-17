@@ -149,8 +149,10 @@ COMPONENTS (type → props):
     // A 2D matrix, ROW-MAJOR: values[r][c]. Must be rectangular (every row same length). null = a blocked/empty cell (maze wall, unfilled DP entry), drawn dimmed. Unlike array/tree (index) and graph (id), a cell is a {row,col} PAIR — highlighted/pointers/colors/notes are all cell-addressed. Layout is automatic; never supply coordinates. Use for matrix traversal, grid BFS/DFS, and DP tables (rowLabels/colLabels annotate the axes).
 - linked_list  { nodes: (number|string)[] (<=10), next?: (number|null)[], highlighted?: number[], pointers?: [{label,index,color}] (<=4), label?, notes?: (string|null)[] }
     // A singly linked list. Node values are index-addressed like an array; highlighted/pointers/notes use those 0-based indices (slow/fast/prev/cur are ordinary pointers). next is a PARALLEL array of successor indices: next[i] = the index node i points to, or null for the end. OMIT next for the default forward chain (0→1→…→null). A non-forward next entry (backward or skipping) draws as an arc above the row — that's what makes reversal (arrows flip) and cycle detection (a back-edge loop) legible.
+- stack        { values: (number|string)[] (<=10), highlighted?: number[], pointers?: [{label,index,color}] (<=4), label?, notes?: (string|null)[] }
+    // A LIFO stack drawn as a vertical column. values[0] is the BOTTOM, values[n-1] is the TOP (next to pop) — the column grows UPWARD, so a push adds a box on top and a pop removes the top box. May be EMPTY (values: []) — a walkthrough often starts/ends with nothing on the stack. Index-addressed like an array: highlighted/pointers/notes use those 0-based indices (a "top" caret is just a pointer at index n-1).
   colors: "orange" | "blue" | "green" | "red". array/tree/list indices are 0-based and must be in bounds; grid {row,col} cells must be in bounds; graph highlighted/pointers/edges must reference known node ids.
-  Pick ONE structure per walkthrough: array_state stacks it with a state_panel; code_walk puts a code_panel beside it.
+  STRUCTURES PER WALKTHROUGH: usually one. But when the algorithm's KEY INSIGHT is an auxiliary structure moving ALONGSIDE the main one — Min Stack's parallel min-stack, a monotonic stack, a sliding window's hash map, a DP table beside the input array — declare BOTH as separate components with distinct ids and patch them TOGETHER each step. The viz zone stacks up to two structures vertically (each keeps its own label + pointers). Never hide the insight structure as a text string in a state_panel: if it is what makes the algorithm clever, the learner must SEE it change (this is the difference between a deck that is correct and one that actually teaches).
 
 OPTIONAL hover text (all interactive-only; never affects PNGs):
 - Any component may carry a top-level "description" (<=200 chars): { type, description?, props }. Shown on hover/tap/focus.
@@ -166,8 +168,8 @@ Instead of repeating near-identical array_state slides, define the components ON
 - Scenes flatten to one PNG per step automatically. Use slides for title/concept framing, a scene for the array walkthrough.
 
 HOW TO BUILD A GOOD DECK:
-1. Slide 1: title. Slide 2: concept (the intuition). Then a scene stepping through the array (or one array_state slide per step).
-2. Show TWO approaches when relevant: brute force first, then optimal.
+1. Slide 1: title. Slide 2: concept — state the core intuition in plain language a FIRST-TIME learner can grasp BEFORE any code or indices appear (what are we doing and why does it work?). Then a scene stepping through the structure.
+2. Show TWO approaches when relevant: brute force first, then optimal — so the learner sees WHY the clever approach is needed, not just the clever approach in isolation.
 3. Every concrete value (sum, pointer positions, state vars) must be ACTUALLY CORRECT — trace the
    algorithm by hand or in code before emitting. Do not guess intermediate states.
 4. Keep each caption/callout to a single clear sentence about what changed this step.
@@ -208,7 +210,9 @@ INPUTS you provide:
 - code_display? — string[] (<=14): the CLEAN source lines to SHOW beside the array (NOT your instrumented \`code\`; drop the record() calls, keep the algorithm). Provide this and the walkthrough gains a persistent code panel; then pass \`line\` in each record() to highlight the running line. Omit for no code panel.
 
 record(step) — call once per step you want to show. Shape (all fields optional but include what's relevant).
-Visualize ONE structure per run — an array, a tree, a graph, a grid, OR a linked list:
+This code tool renders exactly ONE structure per run — an array, a tree, a graph, a grid, a linked list, OR a stack.
+IMPORTANT — when the algorithm's KEY INSIGHT is an AUXILIARY structure moving alongside the main one (Min Stack's parallel min-stack, a monotonic stack, a sliding-window hash map, a DP table beside the input), this single-structure tool CANNOT show both — burying the insight structure as text in a state_panel produces a deck that is correct but does not teach. For those problems, author the deck by hand with render_algorithm_deck instead: declare BOTH structures as separate components and patch them together so the learner SEES them move in lockstep (e.g. two stacks whose tops visibly DIVERGE). Use this code tool when a single structure fully carries the idea.
+Fields for the one structure:
   {
     // --- ARRAY (the default structure) ---
     values:      number[]|string[]   // the array being visualized (<=12). Send once; carried forward if omitted next step.
@@ -239,6 +243,10 @@ Visualize ONE structure per run — an array, a tree, a graph, a grid, OR a link
     list:            (number|string)[]   // node values (<=10), index-addressed. Send once; carried forward if omitted.
     listNext:        (number|null)[]     // OPTIONAL parallel successor indices: listNext[i] = index node i points to, null = end.
                                           // Omit for the default forward chain. Change it to show rewiring (reversal) or a cycle (back-edge).
+
+    // --- STACK (LIFO column; index-addressed like an array; REUSES highlighted/pointers/notes above) ---
+    stack:           (number|string)[]   // stack contents (<=10). values[0] = BOTTOM, last = TOP. push = append, pop = remove last.
+                                          // MAY be empty ([]). Re-send the whole array each step it changes (carried forward if omitted).
 
     // --- shared across all structures ---
     state:       { name: value }     // scalar variables to show (numbers/strings/bools)

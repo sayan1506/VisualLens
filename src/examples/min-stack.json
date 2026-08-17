@@ -1,0 +1,226 @@
+{
+  "meta": {
+    "problem_id": "155",
+    "title": "Min Stack",
+    "canvas": { "width": 1280, "height": 720 },
+    "difficulty": "medium",
+    "complexity": { "time": "O(1)", "space": "O(n)" }
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Min Stack",
+            "subtitle": "push, pop, top, and getMin — all in O(1) — using a parallel min-stack"
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s2",
+      "template": "concept",
+      "components": [
+        {
+          "type": "text",
+          "props": {
+            "text": "getMin() in O(1) is the hard part — a scan would be O(n). The trick: keep a SECOND stack where each level stores the smallest value seen so far. Its top is always the current minimum, so getMin() is just a peek.",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "callout",
+          "props": {
+            "variant": "info",
+            "text": "Both stacks push and pop together, in lockstep — so the min-stack's top always lines up with the main stack's current contents."
+          }
+        }
+      ],
+      "narration": ""
+    }
+  ],
+  "scenes": [
+    {
+      "id": "walk",
+      "template": "code_walk",
+      "components": [
+        {
+          "id": "code",
+          "type": "code_panel",
+          "description": "The full class. The highlighted line is the one running this step. Notice push and pop always touch BOTH stacks.",
+          "props": {
+            "title": "MinStack",
+            "lines": [
+              "class MinStack:",
+              "  def push(self, val):",
+              "    stack.append(val)",
+              "    if minStack: m = min(val, minStack[-1])",
+              "    else: m = val",
+              "    minStack.append(m)",
+              "  def pop(self):",
+              "    stack.pop()",
+              "    minStack.pop()",
+              "  def top(self):",
+              "    return stack[-1]",
+              "  def getMin(self):",
+              "    return minStack[-1]"
+            ]
+          }
+        },
+        {
+          "id": "main",
+          "type": "stack",
+          "description": "The main stack — holds every value pushed, in order. top() peeks its highest box.",
+          "props": { "label": "stack", "values": [] }
+        },
+        {
+          "id": "min",
+          "type": "stack",
+          "description": "The min-stack — each box is the smallest value seen up to that depth. Its top is always the current minimum, so getMin() just peeks here.",
+          "props": { "label": "min-stack", "values": [] }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "description": "The operation being performed and its result.",
+          "props": { "title": "Operation", "vars": {} }
+        }
+      ],
+      "steps": [
+        {
+          "id": "k1",
+          "caption": "push(-2): -2 goes on the main stack. The min-stack is empty, so the min so far is -2 — push -2 there too.",
+          "variant": "info",
+          "patch": {
+            "code": { "activeLine": 5 },
+            "main": {
+              "values": [-2],
+              "highlighted": [0],
+              "pointers": [{ "label": "top", "index": 0, "color": "blue" }]
+            },
+            "min": {
+              "values": [-2],
+              "highlighted": [0],
+              "pointers": [{ "label": "min", "index": 0, "color": "green" }]
+            },
+            "st": { "vars": { "op": "push(-2)", "min": -2 } }
+          }
+        },
+        {
+          "id": "k2",
+          "caption": "push(0): 0 goes on the main stack. But min(0, -2) = -2, so the min-stack keeps -2 on top. Watch the two tops DIVERGE — this is the whole idea.",
+          "variant": "warn",
+          "patch": {
+            "code": { "activeLine": 5 },
+            "main": {
+              "values": [-2, 0],
+              "highlighted": [1],
+              "pointers": [{ "label": "top", "index": 1, "color": "blue" }]
+            },
+            "min": {
+              "values": [-2, -2],
+              "highlighted": [1],
+              "pointers": [{ "label": "min", "index": 1, "color": "green" }]
+            },
+            "st": { "vars": { "op": "push(0)", "min": -2, "note": "0 > -2, min unchanged" } }
+          }
+        },
+        {
+          "id": "k3",
+          "caption": "push(-3): -3 is smaller than the old min, so min(-3, -2) = -3. Both tops are -3 — they line up again because a new minimum arrived.",
+          "variant": "info",
+          "patch": {
+            "code": { "activeLine": 5 },
+            "main": {
+              "values": [-2, 0, -3],
+              "highlighted": [2],
+              "pointers": [{ "label": "top", "index": 2, "color": "blue" }]
+            },
+            "min": {
+              "values": [-2, -2, -3],
+              "highlighted": [2],
+              "pointers": [{ "label": "min", "index": 2, "color": "green" }]
+            },
+            "st": { "vars": { "op": "push(-3)", "min": -3, "note": "-3 < -2, new minimum" } }
+          }
+        },
+        {
+          "id": "k4",
+          "caption": "getMin(): just read the top of the min-stack — -3. No scanning the main stack. This is the O(1) payoff.",
+          "variant": "success",
+          "patch": {
+            "code": { "activeLine": 12 },
+            "main": {
+              "highlighted": [],
+              "pointers": [{ "label": "top", "index": 2, "color": "blue" }]
+            },
+            "min": {
+              "highlighted": [2],
+              "pointers": [{ "label": "min", "index": 2, "color": "green" }]
+            },
+            "st": { "vars": { "op": "getMin()", "result": -3 } }
+          }
+        },
+        {
+          "id": "k5",
+          "caption": "pop(): remove the top of BOTH stacks together. -3 comes off the main stack, and the min-stack's -3 goes with it — so the min automatically reverts to -2.",
+          "variant": "warn",
+          "patch": {
+            "code": { "activeLine": 8 },
+            "main": {
+              "values": [-2, 0],
+              "highlighted": [1],
+              "pointers": [{ "label": "top", "index": 1, "color": "blue" }]
+            },
+            "min": {
+              "values": [-2, -2],
+              "highlighted": [1],
+              "pointers": [{ "label": "min", "index": 1, "color": "green" }]
+            },
+            "st": { "vars": { "op": "pop()", "popped": -3, "min": -2 } }
+          }
+        },
+        {
+          "id": "k6",
+          "caption": "top(): peek the main stack's highest box — 0. The min-stack isn't involved here.",
+          "variant": "success",
+          "patch": {
+            "code": { "activeLine": 10 },
+            "main": {
+              "highlighted": [1],
+              "pointers": [{ "label": "top", "index": 1, "color": "blue" }]
+            },
+            "min": { "highlighted": [] },
+            "st": { "vars": { "op": "top()", "result": 0 } }
+          }
+        },
+        {
+          "id": "k7",
+          "caption": "getMin() again: peek the min-stack top — -2, correct for the current contents. Because the two stacks stayed in lockstep, the answer needed no recomputation.",
+          "variant": "success",
+          "patch": {
+            "code": { "activeLine": 12 },
+            "main": {
+              "highlighted": [],
+              "pointers": [{ "label": "top", "index": 1, "color": "blue" }]
+            },
+            "min": {
+              "highlighted": [1],
+              "pointers": [{ "label": "min", "index": 1, "color": "green" }]
+            },
+            "st": { "vars": { "op": "getMin()", "result": -2 } }
+          }
+        },
+        {
+          "id": "k8",
+          "variant": "info",
+          "caption": "Every operation only touches a stack's top — never a scan — so push, pop, top, and getMin are all O(1). Cost: O(n) extra space for the min-stack."
+        }
+      ]
+    }
+  ]
+}

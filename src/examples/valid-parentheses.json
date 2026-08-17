@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "problem_id": "20",
+    "title": "Valid Parentheses",
+    "canvas": { "width": 1280, "height": 720 },
+    "difficulty": "easy",
+    "complexity": { "time": "O(n)", "space": "O(n)" }
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "template": "title",
+      "components": [
+        {
+          "type": "title_block",
+          "props": {
+            "title": "Valid Parentheses",
+            "subtitle": "Match every closing bracket to the most recent opener with a stack"
+          }
+        }
+      ],
+      "narration": ""
+    },
+    {
+      "id": "s2",
+      "template": "concept",
+      "components": [
+        {
+          "type": "text",
+          "props": {
+            "text": "Opening brackets must close in reverse order: the last opened is the first to close — Last-In-First-Out. A stack captures this exactly: push each opener; when a closer arrives, it must match the top of the stack.",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "callout",
+          "props": {
+            "variant": "info",
+            "text": "If a closer doesn't match the top — or the stack is empty when one arrives — the string is invalid immediately."
+          }
+        }
+      ],
+      "narration": ""
+    }
+  ],
+  "scenes": [
+    {
+      "id": "walk",
+      "template": "code_walk",
+      "components": [
+        {
+          "id": "code",
+          "type": "code_panel",
+          "description": "The algorithm. The highlighted line is what runs at this step.",
+          "props": {
+            "title": "Valid Parentheses",
+            "lines": [
+              "for ch in s:",
+              "  if ch opens (, [, {:",
+              "    push ch",
+              "  else:  # ch is a closer",
+              "    if empty or top != pair:",
+              "      return False",
+              "    pop",
+              "return stack is empty"
+            ]
+          }
+        },
+        {
+          "id": "stack",
+          "type": "stack",
+          "description": "The stack of still-unmatched opening brackets. The top (highest box) is what the next closer must match.",
+          "props": { "label": "stack", "values": [] }
+        },
+        {
+          "id": "st",
+          "type": "state_panel",
+          "description": "The character being scanned and the current top of the stack.",
+          "props": { "title": "Scan", "vars": { "char": "—", "top": "empty" } }
+        }
+      ],
+      "steps": [
+        {
+          "id": "k1",
+          "caption": "Start with an empty stack. Scan '{[]}' left to right; each closing bracket must match the most recent unmatched opener.",
+          "patch": {
+            "code": { "activeLine": 0 },
+            "stack": { "values": [], "highlighted": [], "pointers": [] },
+            "st": { "vars": { "char": "—", "top": "empty" } }
+          }
+        },
+        {
+          "id": "k2",
+          "caption": "'{' is an opening bracket — push it. The stack holds what still needs to be closed.",
+          "patch": {
+            "code": { "activeLine": 2 },
+            "stack": {
+              "values": ["{"],
+              "highlighted": [0],
+              "pointers": [{ "label": "top", "index": 0, "color": "green" }]
+            },
+            "st": { "vars": { "char": "{ (i=0)", "top": "{" } }
+          }
+        },
+        {
+          "id": "k3",
+          "caption": "'[' is also opening — push it on top. The newest opener sits at the top of the stack.",
+          "patch": {
+            "code": { "activeLine": 2 },
+            "stack": {
+              "values": ["{", "["],
+              "highlighted": [1],
+              "pointers": [{ "label": "top", "index": 1, "color": "green" }]
+            },
+            "st": { "vars": { "char": "[ (i=1)", "top": "[" } }
+          }
+        },
+        {
+          "id": "k4",
+          "caption": "']' is a closer. Peek the top: '[' is its matching pair, so this bracket is satisfied.",
+          "patch": {
+            "code": { "activeLine": 4 },
+            "stack": {
+              "values": ["{", "["],
+              "highlighted": [1],
+              "pointers": [{ "label": "top", "index": 1, "color": "green" }]
+            },
+            "st": { "vars": { "char": "] (i=2)", "top": "[" } }
+          }
+        },
+        {
+          "id": "k5",
+          "caption": "Matched — pop '[' off. The stack shrinks and '{' becomes the new top.",
+          "patch": {
+            "code": { "activeLine": 6 },
+            "stack": {
+              "values": ["{"],
+              "highlighted": [],
+              "pointers": [{ "label": "top", "index": 0, "color": "green" }]
+            },
+            "st": { "vars": { "char": "] (i=2)", "top": "{" } }
+          }
+        },
+        {
+          "id": "k6",
+          "caption": "'}' is a closer. Peek the top: '{' is its matching pair, so it's satisfied too.",
+          "patch": {
+            "code": { "activeLine": 4 },
+            "stack": {
+              "values": ["{"],
+              "highlighted": [0],
+              "pointers": [{ "label": "top", "index": 0, "color": "green" }]
+            },
+            "st": { "vars": { "char": "} (i=3)", "top": "{" } }
+          }
+        },
+        {
+          "id": "k7",
+          "caption": "Matched — pop '{'. The stack is empty again, and we've reached the end of the string.",
+          "patch": {
+            "code": { "activeLine": 6 },
+            "stack": { "values": [], "highlighted": [], "pointers": [] },
+            "st": { "vars": { "char": "} (i=3)", "top": "empty" } }
+          }
+        },
+        {
+          "id": "k8",
+          "variant": "success",
+          "caption": "End of string with an empty stack: every bracket found its match. The string is valid.",
+          "patch": {
+            "code": { "activeLine": 7 },
+            "stack": { "values": [], "highlighted": [], "pointers": [] },
+            "st": { "vars": { "char": "done", "top": "empty" } }
+          }
+        }
+      ]
+    }
+  ]
+}

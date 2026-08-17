@@ -54,7 +54,7 @@ function sanitizeStep(step) {
     out.colors = step.colors.map((c) => (COLORS.includes(c) ? c : null))
   if (step.descriptions && typeof step.descriptions === 'object') {
     const d = {}
-    for (const k of ['array', 'state', 'code', 'tree', 'graph', 'grid', 'list']) {
+    for (const k of ['array', 'state', 'code', 'tree', 'graph', 'grid', 'list', 'stack']) {
       if (typeof step.descriptions[k] === 'string') d[k] = step.descriptions[k]
     }
     if (Object.keys(d).length) out.descriptions = d
@@ -157,6 +157,13 @@ function sanitizeStep(step) {
   }
   if (Array.isArray(step.listNext)) {
     out.listNext = step.listNext.map((nx) => (Number.isInteger(nx) ? nx : null))
+  }
+
+  // ---- stack: a LIFO column, index-addressed like an array (values[0] = bottom,
+  // values[n-1] = top). REUSES the highlighted/pointers/notes fields above (same
+  // integer indices). Only `stack` (the values) is stack-specific. May be empty. ----
+  if (Array.isArray(step.stack)) {
+    out.stack = step.stack.map((v) => (['number', 'string'].includes(typeof v) ? v : String(v)))
   }
   return out
 }

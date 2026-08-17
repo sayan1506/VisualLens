@@ -10,6 +10,7 @@ import Graph from '../components/Graph'
 import BarChart from '../components/BarChart'
 import Grid from '../components/Grid'
 import LinkedList from '../components/LinkedList'
+import Stack from '../components/Stack'
 
 // Single per-type dispatch, shared by SlideRenderer (order-based framing
 // templates) and ScoreboardLayout (role-partitioned zoned templates).
@@ -44,5 +45,7 @@ export function renderComponent(c: ComponentInstance, key: string | number) {
       return <Grid key={key} description={description} {...c.props} />
     case 'linked_list':
       return <LinkedList key={key} description={description} {...c.props} />
+    case 'stack':
+      return <Stack key={key} description={description} {...c.props} />
   }
 }

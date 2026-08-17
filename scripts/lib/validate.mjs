@@ -527,6 +527,55 @@ export function validateDeck(deck) {
           }
           break
         }
+        case 'stack': {
+          // Unlike array_block, a stack MAY be empty (values: []) — a walkthrough
+          // often starts/ends with nothing on the stack — so only the type is
+          // required, not non-emptiness. values[0] is the bottom, values[n-1] the top.
+          if (!Array.isArray(p.values)) return err(`${cat}: stack requires props.values (an array)`)
+          if (p.values.length > LIMITS.maxStackDepth)
+            err(`${cat}: values exceeds ${LIMITS.maxStackDepth} elements`)
+          const n = p.values.length
+          p.values.forEach((v, vi) => {
+            if (!['number', 'string'].includes(typeof v))
+              err(`${cat}: values[${vi}] must be a number or string`)
+          })
+          if (p.highlighted !== undefined) {
+            if (!Array.isArray(p.highlighted)) err(`${cat}: highlighted must be an array`)
+            else
+              p.highlighted.forEach((h) => {
+                if (typeof h !== 'number' || h < 0 || h >= n)
+                  err(`${cat}: highlighted index ${h} out of bounds (0..${n - 1})`)
+              })
+          }
+          if (p.pointers !== undefined) {
+            if (!Array.isArray(p.pointers)) err(`${cat}: pointers must be an array`)
+            else {
+              if (p.pointers.length > LIMITS.maxPointers)
+                err(`${cat}: too many pointers (max ${LIMITS.maxPointers})`)
+              p.pointers.forEach((ptr) => {
+                if (!ptr.label) err(`${cat}: a pointer is missing label`)
+                if (typeof ptr.index !== 'number' || ptr.index < 0 || ptr.index >= n)
+                  err(`${cat}: pointer "${ptr.label}" index ${ptr.index} out of bounds (0..${n - 1})`)
+                if (!COLORS.includes(ptr.color))
+                  err(`${cat}: pointer "${ptr.label}" color must be one of ${COLORS.join(', ')}`)
+              })
+            }
+          }
+          if (p.notes !== undefined) {
+            if (!Array.isArray(p.notes)) err(`${cat}: notes must be an array parallel to values`)
+            else {
+              if (p.notes.length > n)
+                err(`${cat}: notes has more entries (${p.notes.length}) than values (${n})`)
+              p.notes.forEach((note, ni) => {
+                if (note !== null && typeof note !== 'string')
+                  err(`${cat}: notes[${ni}] must be a string or null`)
+                else if (typeof note === 'string' && note.length > LIMITS.maxDescriptionChars)
+                  err(`${cat}: notes[${ni}] exceeds ${LIMITS.maxDescriptionChars} chars`)
+              })
+            }
+          }
+          break
+        }
       }
     })
   })

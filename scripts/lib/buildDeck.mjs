@@ -46,6 +46,7 @@ const DEFAULT_DESC = {
   graph: 'The graph being explored. Hover a node to see its role at this step.',
   grid: 'The matrix being processed. Hover a cell to see its value and role at this step.',
   list: 'The linked list being traversed. Hover a node to see its value and role at this step.',
+  stack: 'The stack (LIFO). The top is the highest box — the next value to pop. Hover a box to see its role at this step.',
 }
 
 const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b)
@@ -140,6 +141,23 @@ function defaultListNotes(nodes, highlighted, pointers) {
   })
 }
 
+// Per-cell hover text for a stack run. Parallel to `values` (index 0 = bottom,
+// n-1 = top), same shape contract as defaultNotes so it passes the
+// notes.length <= values.length validation.
+function defaultStackNotes(values, highlighted, pointers) {
+  const hi = new Set(Array.isArray(highlighted) ? highlighted : [])
+  const labelAt = new Map()
+  for (const p of pointers || [])
+    labelAt.set(p.index, labelAt.has(p.index) ? `${labelAt.get(p.index)}, ${p.label}` : p.label)
+  const top = values.length - 1
+  return values.map((v, i) => {
+    let s = `Value ${v} at depth ${i}${i === top ? ' (top)' : ''}.`
+    if (labelAt.has(i)) s += ` Pointer ${labelAt.get(i)} is here.`
+    else if (hi.has(i)) s += ' Highlighted this step.'
+    return clampDesc(s)
+  })
+}
+
 // A run visualizes exactly ONE structure. Detection priority (array > tree >
 // graph) matches record() field precedence; null means no structure → the flat
 // fallback. seedValues is already resolved for the array case by the caller.
@@ -153,6 +171,10 @@ function detectStructure(usableSteps, seedValues) {
   if (gr) return 'grid'
   const l = usableSteps.find((s) => Array.isArray(s.list) && s.list.length > 0)
   if (l) return 'linked_list'
+  // A stack MAY be empty at the first recorded step (push comes later), so detect
+  // it if ANY step carries a `stack` field — not just a non-empty one.
+  const st = usableSteps.find((s) => Array.isArray(s.stack))
+  if (st) return 'stack'
   return null
 }
 
@@ -301,6 +323,36 @@ function makeViz(kind, { seedValues, usableSteps, provided, assignColor }) {
           currentNext = step.listNext.slice()
         }
         p.notes = Array.isArray(step.notes) ? step.notes : defaultListNotes(currentNodes, p.highlighted, p.pointers)
+        return p
+      },
+    }
+  }
+
+  if (kind === 'stack') {
+    // Seed from the first step carrying a stack (often empty — a push comes later).
+    const seedStack = (usableSteps.find((s) => Array.isArray(s.stack))?.stack || []).slice()
+    let currentValues = seedStack.slice()
+    return {
+      id: 'stack',
+      component: {
+        id: 'stack',
+        type: 'stack',
+        description: clampDesc(provided.stack || DEFAULT_DESC.stack),
+        props: { values: seedStack },
+      },
+      patchFor(step) {
+        const p = {
+          highlighted: Array.isArray(step.highlighted) ? step.highlighted : [],
+          pointers: Array.isArray(step.pointers)
+            ? step.pointers.map((pt) => ({ label: pt.label, index: pt.index, color: assignColor(pt.label, pt.color) }))
+            : [],
+        }
+        // The stack grows/shrinks every push/pop — patch values only on change.
+        if (Array.isArray(step.stack) && !sameValues(step.stack, currentValues)) {
+          p.values = step.stack
+          currentValues = step.stack.slice()
+        }
+        p.notes = Array.isArray(step.notes) ? step.notes : defaultStackNotes(currentValues, p.highlighted, p.pointers)
         return p
       },
     }
