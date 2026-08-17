@@ -161,6 +161,23 @@ export interface LinkedListProps {
   notes?: (string | null)[] // per-node hover text, parallel to nodes
 }
 
+// A stack (LIFO). Values are index-addressed like an array: values[0] is the
+// BOTTOM of the stack and values[n-1] is the TOP (the next to pop). It renders
+// as a vertical column growing UPWARD, so the top sits at the visual top and a
+// freshly pushed value pops in there — which is exactly what makes push (a box
+// appears on top) and pop (the top box leaves) read at a glance. Unlike
+// array_block, a stack MAY be empty (values: []): a walkthrough often starts and
+// ends with nothing on the stack. highlighted/pointers/notes reuse the SAME
+// index semantics as ArrayBlock, so a `top` caret is an ordinary pointer at
+// index n-1 (it just glides vertically instead of horizontally).
+export interface StackProps {
+  values: (number | string)[]
+  highlighted?: number[]
+  pointers?: Pointer[]
+  label?: string
+  notes?: (string | null)[] // per-cell hover text, parallel to values
+}
+
 // ---- component instance discriminated union ----
 // `type` selects the component; `props` is that component's prop shape.
 // Every instance may also carry (additive, backward-compatible):
@@ -183,6 +200,7 @@ export type ComponentInstance = WithMeta<
   | { type: 'bar_chart'; props: BarChartProps }
   | { type: 'grid'; props: GridProps }
   | { type: 'linked_list'; props: LinkedListProps }
+  | { type: 'stack'; props: StackProps }
 >
 
 export type ComponentType = ComponentInstance['type']
